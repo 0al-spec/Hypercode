@@ -1,0 +1,13 @@
+# ANTLR-generated artifacts
+Hypercode*.java
+*.class
+*.tokens
+*.interp
+*.log
+
+# Optional: exclude downloaded ANTLR jar
+antlr-*.jar
+
+# Example files
+example.tree
+example.result.log

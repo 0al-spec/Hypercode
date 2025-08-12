@@ -1,0 +1,2 @@
+Button#onlyId
+Button.primary
