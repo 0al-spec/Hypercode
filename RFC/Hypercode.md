@@ -8,7 +8,7 @@
 
 **Author:** Egor Merkushev
 
-**Licence:** MIT
+**Licence:** Creative Commons Attribution 4.0 International License (CC BY 4.0)
 
 ## Status of this Document
 
@@ -18,7 +18,7 @@ This is **not yet a finalized standard**, and details in syntax, behavior, or te
 
 Feedback and contributions are welcome via the [project’s GitHub repository](https://github.com/0al-spec/hypercode) or issue tracker.
 
-This document is released under the MIT License and follows open specification principles, similar in spirit to community-driven RFCs.
+This document is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0) and follows open specification principles, similar in spirit to community-driven RFCs.
 
 ## 1. Abstract
 

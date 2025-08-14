@@ -1,5 +1,3 @@
-# CONTRIBUTING.md
-
 # Contributing to Hypercode
 
 Welcome! We gladly accept contributions to the **Hypercode grammar, specification, tooling, and examples**.

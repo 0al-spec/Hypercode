@@ -8,3 +8,10 @@ Declarative programming paradigm for context-aware systems
 ## Subprojects
 
 - [EBNF / ANTLR Playground](EBNF/README.md) — A minimal interactive environment for experimenting with the Hypercode grammar (ANTLR4). Contains the lexer/parser grammars, example `.hc` files, build/run Makefile and tests. See `EBNF/README.md` for requirements and quick-start instructions.
+
+## License
+
+- Specifications & Documents (in `DOCS/`, `RFC/`) are licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
+- Source Code (in `EBNF/`) is licensed under the MIT License.
+
+See [LICENSE](./LICENSE) and [LICENSE-CC-BY-4.0](./LICENSE-CC-BY-4.0) for details.
