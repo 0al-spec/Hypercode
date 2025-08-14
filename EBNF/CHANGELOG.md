@@ -1,6 +1,4 @@
-# `CHANGELOG.md`
-
-## Hypercode Change Log
+# Hypercode Change Log
 
 All notable changes to the **Hypercode language** will be documented in this file.
 
