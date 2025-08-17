@@ -41,7 +41,7 @@ Hypercode aims to solve this by:
 
 The Hypercode paradigm is built on three main components:
 
-*  **Hypercode (`.hc` file):** A file describing the application's logical structure using simple, indentation-based hierarchy. It contains abstract commands or entities. It is analogous to an HTML document's structure. See [Hypercode Syntax Specification](./hypercode-syntax.md) for the formal grammar of `.hc` files.
+*  **Hypercode (`.hc` file):** A file describing the application's logical structure using simple, indentation-based hierarchy. It contains abstract commands or entities. It is analogous to an HTML document's structure. See [Hypercode Syntax Specification](../EBNF/Hypercode_Syntax.md) for the formal grammar of `.hc` files.
 
 *  **Hypercode Cascade Sheet (`.hcs` file):** A YAML-like file that defines how to interpret and configure the commands in the Hypercode file. It uses selectors to target commands and apply configurations. It is analogous to a CSS stylesheet.
 
@@ -250,7 +250,7 @@ The specification assumes that the resolution and execution engine is trusted. N
 
 ## 11. References
 
-* [Hypercode Syntax Specification (BNF)](https://github.com/0al/hypercode/hypercode-syntax.md)
+* [Hypercode Syntax Specification (BNF)](../EBNF/Hypercode_Syntax.md)
 * [W3C CSS 2.1 Specification](https://www.w3.org/TR/CSS21/)
 * [YAML 1.2 Spec (OASIS)](https://yaml.org/spec/1.2/)
 * [Spring Framework: Dependency Injection](https://docs.spring.io/spring-framework/reference/core/beans/)
