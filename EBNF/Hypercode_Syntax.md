@@ -29,7 +29,11 @@ The goal is to provide an unambiguous reference for tool developers, parser auth
 <identifier>     ::= <letter> { <letter> | <digit> | "_" | "-" }
 <letter>         ::= "A" | ... | "Z" | "a" | ... | "z"
 <digit>          ::= "0" | ... | "9"
-<indent>         ::= (one or more spaces or tabs)
+<indent>         ::= <spaces> | <tabs>
+<spaces>         ::= <space> { <space> }
+<tabs>           ::= <tab> { <tab> }
+<space>          ::= " "
+<tab>            ::= "\t"
 <newline>        ::= "\n"
 ```
 
