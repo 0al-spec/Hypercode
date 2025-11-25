@@ -8,7 +8,7 @@
 
 **Author:** Egor Merkushev
 
-**Licence:** MIT
+**License:** MIT
 
 ## Overview
 
