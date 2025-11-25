@@ -20,7 +20,7 @@ The goal is to provide an unambiguous reference for tool developers, parser auth
 
 ```bnf
 <hypercode>      ::= { <command-line> }
-<command-line>   ::= <indent> <command> <newline> [<block>]
+<command-line>   ::= [<indent>] <command> <newline> [<block>]
 <command>        ::= <identifier> [<class>] [<id>]
 <class>          ::= "." <identifier>
 <id>             ::= "#" <identifier>
