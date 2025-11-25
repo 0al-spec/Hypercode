@@ -115,7 +115,7 @@ Root
 * Initial public draft of the Hypercode grammar in BNF.
 * Describes core structural elements: command, class, ID, indentation-based hierarchy.
 * Includes:
-  - EBNF grammar for `.hc` files
+  - BNF grammar for `.hc` files
   - Visual AST example
   - Positive and negative test cases
   - Notes on scope and grammar limitations
