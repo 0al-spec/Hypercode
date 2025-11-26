@@ -12,5 +12,5 @@
 - None observed during the latest run.
 
 ## Suggested Next Steps
-- Keep `antlr-4.13.0-complete.jar` available or cached to avoid redownloading.
+- If the download of `antlr-4.13.0-complete.jar` becomes blocked, consider providing an alternative download method, mirroring the JAR, or checking it into the repository to ensure build reliability.
 - Re-run `make test-all` after any grammar changes to ensure regression coverage.
