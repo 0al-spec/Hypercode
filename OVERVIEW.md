@@ -141,5 +141,5 @@ Hypercode is intentionally **orthogonal** to many existing tools:
   - **language-agnostic** by design, meant to sit above general-purpose languages,
   - with **cascade and context** as first-class constructs.
 
-Hypercode is the place where the system's **architectural structure** is written, read, reviewed, versioned, and reasoned about —
-with **behavior emerging from the combination of declared structure (`.hc`) and contextual rules (`.hcs`) interpreted by a runtime or generated into host code**.
+Hypercode is the place where the system's architectural structure is defined, reviewed, and versioned.
+The system's behavior emerges when this declared structure (.hc) is combined with the contextual and cascading rules (.hcs) and interpreted by a runtime or compiled into host code.
