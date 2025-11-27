@@ -1,5 +1,5 @@
 
-## Hypercode Conceptual Overview ("Constitution Draft", v3)
+## Hypercode Conceptual Overview
 
 ### 1. Purpose
 
