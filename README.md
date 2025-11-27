@@ -1,5 +1,4 @@
 # Hypercode
-Declarative programming paradigm for context-aware systems
 
 Hypercode is a declarative architectural language designed to make system structure clear to both humans and language models.
 
