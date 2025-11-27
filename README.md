@@ -1,9 +1,14 @@
 # Hypercode
-Declarative programming paradigm for context-aware systems
+
+Hypercode is a declarative architectural language designed to make system structure clear to both humans and language models.
 
 ## RFC / Specification
 
 - [RFC: Hypercode — A Declarative Paradigm for Context-Aware Programming](RFC/Hypercode.md) — Draft specification (concepts, syntax, HCS cascading model, examples). Read this to understand the language goals, selectors, contextual `@rules`, and execution model.
+
+## Conceptual Overview
+
+- [Hypercode Conceptual Overview](OVERVIEW.md) — High-level explanation of Hypercode's purpose, the relationship between .hc and .hcs files, division of responsibilities, execution model, cascade semantics, and how Hypercode relates to other tools and languages.
 
 ## Subprojects
 
