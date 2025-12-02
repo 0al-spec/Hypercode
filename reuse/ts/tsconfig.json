@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "build/tsbuildinfo",
+    "outDir": "build",
+    "noEmit": true,
+    "allowImportingTsExtensions": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    "lib": ["ESNext"],
+    "moduleResolution": "Node",
+    "module": "esnext",
+    "target": "es2024",
+    "isolatedModules": true,
+    "removeComments": true,
+
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "noUncheckedIndexedAccess": true,
+    "experimentalDecorators": false,
+    "useDefineForClassFields": true,
+    "skipLibCheck": true
+  }
+}
