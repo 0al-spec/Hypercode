@@ -1,0 +1,250 @@
+// -- biome-ignore-all assist/source/useSortedKeys: This is exception
+{
+  "files": {
+    "includes": [
+      "**/*.json",
+      "**/*.jsonc",
+      "!**/package-lock.json",
+      //      "!tsconfig.json",
+      "**/*.ts",
+      "!**/_gen",
+      "!meta/tea/src/graph/fp/**/*.ts"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space", // default is `tab`
+    "lineWidth": 60 // default is `80`
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "correctness": {
+        /* Off */
+        "noUnusedVariables": "off",
+        "noUnusedFunctionParameters": "off",
+        "useParseIntRadix": "off",
+
+        /* Off: Not React project */
+        "useHookAtTopLevel": "off",
+
+        /** Warn, Not fix */
+        // TODO: Works incorrect. E.g: anf/AbstractBoolVar.count
+        "noUnusedPrivateClassMembers": "off",
+
+        /* Warning, Safe fix */
+        "noUnusedImports": {
+          "level": "warn",
+          "fix": "safe"
+        },
+        "useImportExtensions": "off",
+        // "useImportExtensions": {
+        //   "level": "warn",
+        //   "fix": "safe",
+        //   "options": {
+        //     "suggestedExtensions": {
+        //       "ts": {
+        //         "module": "js",
+        //         "component": "jsx"
+        //       }
+        //     }
+        //   }
+        // },
+
+        /* Error */
+        "noInvalidUseBeforeDeclaration": "error",
+
+        /* Error: React */
+        "noRenderReturnValue": "error",
+        "useExhaustiveDependencies": "error",
+
+        /* Error, Safe fix */
+        "noGlobalDirnameFilename": {
+          "level": "error",
+          "fix": "safe"
+        },
+        "noProcessGlobal": {
+          "level": "error",
+          "fix": "safe"
+        },
+        "useJsonImportAttributes": {
+          "level": "error",
+          "fix": "safe"
+        }
+        // "useHookAtTopLevel": "error"
+      },
+      "nursery": {
+        /** Off */
+        "noShadow": "off",
+        "noUselessUndefined": "off",
+
+        /* Error */
+        // todo: Wait for "ignore type cycles" option
+        // "noImportCycles": "error",
+        "noFloatingPromises": "error",
+        "useExhaustiveSwitchCases": "error"
+
+        /* Warn, Not fix */
+      },
+      "performance": {
+        /* Off */
+        // TODO: Refactor code and make it warn
+        "noReExportAll": "off",
+        // TODO: Refactor code and make it warn
+        "noBarrelFile": "off",
+
+        /* Warn, Not fix */
+        "noAccumulatingSpread": "warn",
+        "noNamespaceImport": "warn",
+        "useTopLevelRegex": "warn",
+        "noAwaitInLoops": "warn"
+      },
+      "style": {
+        /* Off */
+        "noUselessElse": "off",
+        // "noParameterAssign": "off",
+
+        // /* Warn, Not fixable */
+        // "noExportedImports": "warn",
+        // /* Error: React */
+        // "useComponentExportOnlyModules": "error",
+
+        /* Warn, Not fix */
+        "noNamespace": "warn",
+        "noEnum": "warn",
+        "noNegationElse": "warn",
+        "noParameterAssign": "warn",
+        "noProcessEnv": "warn",
+
+        /* Error */
+        "noRestrictedGlobals": {
+          "level": "error",
+          "options": {
+            "deniedGlobals": {
+              "name": "Use local value or property"
+            }
+          }
+        },
+
+        /* Error, Safe fix */
+        "useImportType": {
+          "level": "error",
+          "fix": "safe"
+        },
+
+        /* Warn, Safe fix */
+        "noUnusedTemplateLiteral": {
+          "level": "warn",
+          "fix": "safe"
+        },
+
+        /* PROBLEM: Incorrect work with exceptions
+         *  - https://biomejs.dev/linter/rules/no-yoda-expression/#exceptions
+         */
+        "noYodaExpression": "off",
+        // "noYodaExpression": {
+        //   "level": "warn",
+        //   "fix": "safe"
+        // },
+
+        "useAsConstAssertion": {
+          "level": "warn",
+          "fix": "safe"
+        },
+
+        /* Off: Conflicts with TS config compilerOptions.paths */
+        "useNodejsImportProtocol": "off",
+        "useSymbolDescription": "error",
+
+        /* Warn, Safe fix */
+        "useNumericSeparators": {
+          "level": "warn",
+          "fix": "safe"
+        },
+        "useGroupedAccessorPairs": "warn",
+        "useConsistentObjectDefinitions": "warn"
+      },
+      "complexity": {
+        /* Off */
+        "noForEach": "off",
+        "noUselessConstructor": "off",
+        "noThisInStatic": "off",
+        "noStaticOnlyClass": "off",
+        "noUselessUndefinedInitialization": "off",
+
+        /* Warn, Not fixable */
+        "noBannedTypes": "warn",
+
+        /* Warn, Not fix */
+
+        /* Error, Safe fix */
+        "useLiteralKeys": {
+          "level": "warn",
+          "fix": "safe"
+        },
+        "useIndexOf": "warn"
+      },
+      "suspicious": {
+        /** Off */
+        "noConfusingVoidType": "off",
+        "useAdjacentOverloadSignatures": "off",
+
+        /* Warn, Not fixable */
+        "noSelfCompare": "warn",
+        "noShadowRestrictedNames": "warn",
+        "noExplicitAny": "warn",
+
+        /* Warn, Not fix */
+        "noUselessRegexBackrefs": "warn",
+
+        /* Error: React */
+        "noReactSpecificProps": "off",
+        "noConstantBinaryExpressions": "error",
+        // "noSecrets": "error",
+        "useStaticResponseMethods": "error",
+        "useIterableCallbackReturn": "error",
+        "noTsIgnore": {
+          "level": "error",
+          "fix": "safe"
+        },
+        "noUselessEscapeInString": "warn"
+      }
+    }
+  },
+
+  "assist": {
+    "enabled": true,
+    "includes": ["src/**"],
+    "actions": {
+      "source": {
+        "useSortedKeys": "off",
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              ":NODE:",
+              ":BLANK_LINE:",
+              ":PACKAGE:",
+              ":BLANK_LINE:",
+              ":PATH:",
+              ":BLANK_LINE:",
+              ":ALIAS:"
+            ]
+          }
+        }
+      }
+    }
+  },
+
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single" // default is `double`
+      // , "lineWidth": 60 // override `formatter.lineWidth`
+    }
+  },
+  "json": {
+    "formatter": {
+      "enabled": true
+      // , "lineWidth": 60 // override `formatter.lineWidth`
+    }
+  }
+}
