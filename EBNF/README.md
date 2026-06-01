@@ -13,8 +13,8 @@ This subproject provides a minimal interactive environment for experimenting wit
 ## Quick Start
 
 ```bash
-git clone https://github.com/0AL/Hypercode.git
-cd Hypercode/examples/antlr
+git clone https://github.com/0al-spec/Hypercode.git
+cd Hypercode/EBNF
 make run
 ```
 
@@ -28,7 +28,7 @@ The first `make run` will automatically:
 ## 📁 Directory Layout
 
 ```
-examples/antlr/
+EBNF/
 ├── HypercodeLexer.g4       # ANTLR4 lexer grammar (tokens, indentation)
 ├── HypercodeParser.g4      # ANTLR4 parser grammar (commands, blocks)
 ├── example.hc              # Sample Hypercode input file
