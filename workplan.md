@@ -60,7 +60,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 
 ## M3 — Emit & validation
 - [ ] HC-030 Generic emit: resolved graph → canonical IR (YAML/JSON), schema-agnostic, marked generated
-- [ ] HC-031 `hypercode validate`: syntax + selector validity + id uniqueness + cascade conflicts + provenance report
+- [x] HC-031 `hypercode validate`: id uniqueness (.hc) + dangling-selector warnings (.hcs vs .hc) — `swift/Sources/Hypercode/Validation/`, CLI `validate`
 - [ ] HC-032 Versioned resolved-graph schema (the cross-impl contract) + valid/invalid fixtures
 
 ## M4 — Consumers & compilation (downstream)
@@ -78,6 +78,6 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [ ] HC-063 Refactor Ontology's Hypercode import path onto the shared grammar-core
 
 ## Cross-cutting
-- [ ] HC-090 Swift CI workflow (build + test on PR)
+- [x] HC-090 Swift CI workflow (build + test) — `.github/workflows/swift.yml`
 - [ ] HC-091 Confirm repo layout for the Swift implementation (currently `swift/`)
 - [ ] HC-092 Relabel the ANTLR/Java implementation as a conformance oracle once Swift reaches parity

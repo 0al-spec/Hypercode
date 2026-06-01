@@ -3,8 +3,9 @@ import Hypercode
 
 let usage = """
 usage:
-  hypercode parse <file.hc>
-  hypercode resolve <file.hc> --hcs <file.hcs> [--ctx key=value]...
+  hypercode parse    <file.hc>
+  hypercode validate <file.hc> [--hcs <file.hcs>]
+  hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
 """
 
 func fail(_ message: String, code: Int32 = 1) -> Never {
@@ -64,6 +65,48 @@ func runResolve(_ args: [String]) throws {
     print(ResolvedNode.tree(resolved), terminator: "")
 }
 
+func runValidate(_ args: [String]) throws {
+    var hcPath: String?
+    var hcsPath: String?
+
+    var index = 0
+    while index < args.count {
+        switch args[index] {
+        case "--hcs":
+            index += 1
+            guard index < args.count else { fail("error: --hcs needs a path") }
+            hcsPath = args[index]
+        default:
+            if hcPath == nil { hcPath = args[index] } else {
+                fail("error: unexpected argument '\(args[index])'")
+            }
+        }
+        index += 1
+    }
+
+    guard let hcPath else { fail("error: validate needs a .hc file\n\n\(usage)", code: 64) }
+
+    let forest = try Parser(source: readSource(hcPath)).parse()
+    let validator = Validator()
+    var diagnostics = validator.validate(forest)
+    if let hcsPath {
+        let sheet = try CascadeSheetReader().read(readSource(hcsPath))
+        diagnostics += validator.validate(sheet, against: forest)
+    }
+
+    guard !diagnostics.isEmpty else {
+        print("ok: no issues found")
+        return
+    }
+    for diagnostic in diagnostics {
+        let location = diagnostic.line.map { "line \($0): " } ?? ""
+        print("\(diagnostic.severity.rawValue): \(location)\(diagnostic.message)")
+    }
+    if diagnostics.contains(where: { $0.severity == .error }) {
+        exit(1)
+    }
+}
+
 let arguments = Array(CommandLine.arguments.dropFirst())
 guard let command = arguments.first else {
     fail(usage, code: 64)
@@ -73,6 +116,8 @@ do {
     switch command {
     case "resolve":
         try runResolve(Array(arguments.dropFirst()))
+    case "validate":
+        try runValidate(Array(arguments.dropFirst()))
     case "parse":
         guard arguments.count >= 2 else { fail(usage, code: 64) }
         try runParse(arguments[1])
