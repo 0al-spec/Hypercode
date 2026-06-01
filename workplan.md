@@ -29,9 +29,8 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
   SpecificationCore is 0AL's own foundation.
 - ✅ **Extract a shared grammar-core**, but **build it here in Hypercode first**,
   then refactor Hyperprompt and Ontology onto it (see M6).
-- ❓ **D1 — `.hcs` lexical syntax.** Proposed: hand-rolled minimal YAML-subset
-  reader (no third-party YAML lib), orthogonal to the spec-based rules above.
-  Alternative: depend on Yams (full YAML).
+- ✅ **D1 — `.hcs` lexical syntax.** Hand-rolled minimal subset for now; Yams is
+  **not** pulled in until we actually consume real YAML input.
 - ❓ **D2 — Resolution semantics form.** The SpecificationCore specs *are* the
   executable rules. Open: how much extra prose / fixtures (and, later, Lean) to
   layer on top, and when.
@@ -73,7 +72,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [ ] HC-050 Lean 4 oracle for the cascade core: executable semantics that generates the fixtures, plus a theorem that the precedence key is a total order ⇒ resolution is deterministic & total. Deferred until the rules stabilize on a working implementation.
 
 ## M6 — Shared grammar-core (sequenced: Hypercode first, then refactor consumers)
-- [ ] HC-060 Build the canonical Hypercode grammar-core as layered Specifications here (Lexical / Syntactic), mirroring Hyperprompt's `HypercodeGrammar` but for core `.hc`
+- [x] HC-060 Canonical `.hc` grammar-core as layered Specifications — `swift/Sources/Hypercode/Specifications/` (Lexical: `IdentifierSpec`; Syntactic: `CommandSpec`, line specs; Decisions: `LineKindDecision`). Indentation stays in the hand-rolled lexer front.
 - [ ] HC-061 Reconcile dialect differences with Hyperprompt (quotes / references / paths): core vs dialect extensions
 - [ ] HC-062 Refactor Hyperprompt to depend on Hypercode's grammar-core (after it stabilizes)
 - [ ] HC-063 Refactor Ontology's Hypercode import path onto the shared grammar-core
