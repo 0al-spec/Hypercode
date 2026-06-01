@@ -17,13 +17,24 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
   Consumers (Ontology, …) depend on Hypercode, never the reverse.
 - Target-specific compilation (DomainOntologyPackage, Terraform, …) is
   **consumer-owned**, downstream of the resolved graph.
+- Rules are **executable specifications** (SpecificationCore): grammar,
+  validation and cascade resolution are composable `Specification` /
+  `DecisionSpec` objects — the 0AL house style.
 
 ## Open decisions
 
-- ❓ **D1 — `.hcs` syntax.** Proposed: hand-rolled minimal YAML-subset parser
-  (zero deps, like `.hc`). Alternative: depend on Yams (full YAML).
-- ❓ **D2 — Resolver order.** Proposed: formal resolution semantics + fixtures
-  first, then implement against them. Alternative: code-first, formalize after.
+- ✅ **Adopt SpecificationCore** (`github.com/SoundBlaster/SpecificationCore`).
+  Decided: grammar, validation and cascade resolution are expressed as composable
+  `Specification` / `DecisionSpec` objects. Zero *external* deps still holds —
+  SpecificationCore is 0AL's own foundation.
+- ✅ **Extract a shared grammar-core**, but **build it here in Hypercode first**,
+  then refactor Hyperprompt and Ontology onto it (see M6).
+- ❓ **D1 — `.hcs` lexical syntax.** Proposed: hand-rolled minimal YAML-subset
+  reader (no third-party YAML lib), orthogonal to the spec-based rules above.
+  Alternative: depend on Yams (full YAML).
+- ❓ **D2 — Resolution semantics form.** The SpecificationCore specs *are* the
+  executable rules. Open: how much extra prose / fixtures (and, later, Lean) to
+  layer on top, and when.
 
 ## M0 — Spec foundation
 - [x] HC-001 `.hc` BNF syntax spec, incl. INDENT/DEDENT block rule — `EBNF/Hypercode_Syntax.md` *(PR #5, open)*
@@ -36,13 +47,14 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-011 `.hc` recursive-descent parser → `Command` AST — `swift/Sources/Hypercode/Parser.swift`
 - [x] HC-012 `hypercode` CLI: parse + print tree — `swift/Sources/HypercodeCLI/`
 - [x] HC-013 Lexer/parser tests ported from fixtures (15 green) — `swift/Tests/`
+- [x] HC-014 Adopt SpecificationCore + seed the `Specifications/` layer (`IdentifierSpec`) — `swift/Sources/Hypercode/Specifications/`
 
-## M2 — Cascade resolution 🔜
-- [ ] HC-020 Formal resolution semantics `Hypercode_Resolution.md` (specificity algebra, selector matching, cascade merge, `@rules`/context) + conformance fixtures *(gated by D2)*
+## M2 — Cascade resolution 🔜 (on SpecificationCore)
+- [ ] HC-020 Resolution semantics as specifications + conformance fixtures; thin `Hypercode_Resolution.md` narrating specificity/cascade
 - [ ] HC-021 `.hcs` parser → cascade-sheet model (selectors, rules, `@env[…]` blocks) *(gated by D1)*
-- [ ] HC-022 Selector matching: type / `.class` / `#id` / child (`>`)
-- [ ] HC-023 Specificity + cascade merge: `#id` > `.class` > `type`, source order, origin/importance
-- [ ] HC-024 Context activation: `@env[…]` / `client[…]` (white-label)
+- [ ] HC-022 Selector matching as `Specification`s over nodes: type / `.class` / `#id` / child (`>`)
+- [ ] HC-023 Specificity + cascade as a `DecisionSpec`: precedence key `(importance, specificity, source-order)` → value + provenance
+- [ ] HC-024 Context activation specs: `@env[…]` / `client[…]` (white-label)
 - [ ] HC-025 Resolver: `.hc` + `.hcs` + context → resolved graph (with provenance)
 - [ ] HC-026 Resolver tests against the conformance fixtures
 - [ ] HC-027 CLI: `hypercode resolve app.hc --hcs config.hcs [--ctx env=production]`
@@ -59,6 +71,12 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 
 ## M5 — Formal verification 🅿️
 - [ ] HC-050 Lean 4 oracle for the cascade core: executable semantics that generates the fixtures, plus a theorem that the precedence key is a total order ⇒ resolution is deterministic & total. Deferred until the rules stabilize on a working implementation.
+
+## M6 — Shared grammar-core (sequenced: Hypercode first, then refactor consumers)
+- [ ] HC-060 Build the canonical Hypercode grammar-core as layered Specifications here (Lexical / Syntactic), mirroring Hyperprompt's `HypercodeGrammar` but for core `.hc`
+- [ ] HC-061 Reconcile dialect differences with Hyperprompt (quotes / references / paths): core vs dialect extensions
+- [ ] HC-062 Refactor Hyperprompt to depend on Hypercode's grammar-core (after it stabilizes)
+- [ ] HC-063 Refactor Ontology's Hypercode import path onto the shared grammar-core
 
 ## Cross-cutting
 - [ ] HC-090 Swift CI workflow (build + test on PR)
