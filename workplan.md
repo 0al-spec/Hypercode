@@ -48,14 +48,14 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-013 Lexer/parser tests ported from fixtures (15 green) — `swift/Tests/`
 - [x] HC-014 Adopt SpecificationCore + seed the `Specifications/` layer (`IdentifierSpec`) — `swift/Sources/Hypercode/Specifications/`
 
-## M2 — Cascade resolution 🔜 (on SpecificationCore)
+## M2 — Cascade resolution ✅ core (on SpecificationCore)
 - [ ] HC-020 Resolution semantics as specifications + conformance fixtures; thin `Hypercode_Resolution.md` narrating specificity/cascade
-- [ ] HC-021 `.hcs` parser → cascade-sheet model (selectors, rules, `@env[…]` blocks) *(gated by D1)*
-- [ ] HC-022 Selector matching as `Specification`s over nodes: type / `.class` / `#id` / child (`>`)
-- [ ] HC-023 Specificity + cascade as a `DecisionSpec`: precedence key `(importance, specificity, source-order)` → value + provenance
-- [ ] HC-024 Context activation specs: `@env[…]` / `client[…]` (white-label)
-- [ ] HC-025 Resolver: `.hc` + `.hcs` + context → resolved graph (with provenance)
-- [ ] HC-026 Resolver tests against the conformance fixtures
+- [x] HC-021 `.hcs` reader → cascade-sheet model (selectors, rules, `@dimension[value]` blocks) — `swift/Sources/Hypercode/HCS/CascadeSheet*.swift`
+- [x] HC-022 Selector matching as `Specification`s over nodes: type / `.class` / `#id` / child (`>`) — `HCS/SelectorSpecs.swift`
+- [x] HC-023 Specificity + cascade as a `DecisionSpec`: `(specificity, source-order)` → value + provenance — `HCS/Resolver.swift` *(origin/importance deferred until there's syntax for it)*
+- [x] HC-024 Context activation: `@dimension[value]` guards (env / client) via `Rule.isActive(in:)`
+- [x] HC-025 Resolver: `.hc` + `.hcs` + context → resolved graph with provenance — `HCS/Resolver.swift`
+- [x] HC-026 Resolver tests: RFC §5 web-service example (dev + production + provenance), reader & selector tests — `swift/Tests/`
 - [ ] HC-027 CLI: `hypercode resolve app.hc --hcs config.hcs [--ctx env=production]`
 
 ## M3 — Emit & validation
