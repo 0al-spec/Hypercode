@@ -1,0 +1,24 @@
+Logo:
+  asset: "logos/default.svg"
+
+Api:
+  base_url: "https://api.default.example"
+
+Footer:
+  copyright: "(c) Example"
+
+@client[acme]:
+  Logo:
+    asset: "logos/acme.svg"
+  Api:
+    base_url: "https://api.acme.example"
+  Footer:
+    copyright: "(c) ACME Corp"
+
+@client[globex]:
+  Logo:
+    asset: "logos/globex.svg"
+  Api:
+    base_url: "https://api.globex.example"
+  Footer:
+    copyright: "(c) Globex Inc"

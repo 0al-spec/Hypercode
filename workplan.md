@@ -64,7 +64,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-032 Versioned resolved-graph schema (cross-impl contract) + fixtures — `swift/Schema/hypercode-ir-v1.schema.json` *(automated schema-validation in CI deferred)*
 
 ## M4 — Consumers & compilation (downstream)
-- [ ] HC-040 White-label example end-to-end: one `.hc`, swap `.hcs` → different builds
+- [x] HC-040 White-label example: one `.hc`, swap `--ctx client=…` → different brand builds — `swift/Examples/whitelabel/` + `WhiteLabelTests`
 - [ ] HC-041 Backends/adapters pattern doc: resolved graph → target language/format
 - [ ] HC-042 Ontology path (in the **Ontology** repo): `ontologyc import-hypercode` maps resolved graph → DomainOntologyPackage YAML; `--schema` stays consumer-side
 
