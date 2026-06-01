@@ -45,3 +45,14 @@ public extension Selector {
         }
     }
 }
+
+extension Selector: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case let .type(name): return name
+        case let .klass(name): return ".\(name)"
+        case let .id(name): return "#\(name)"
+        case let .child(ancestor, descendant): return "\(ancestor) > \(descendant)"
+        }
+    }
+}

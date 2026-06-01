@@ -56,7 +56,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-024 Context activation: `@dimension[value]` guards (env / client) via `Rule.isActive(in:)`
 - [x] HC-025 Resolver: `.hc` + `.hcs` + context → resolved graph with provenance — `HCS/Resolver.swift`
 - [x] HC-026 Resolver tests: RFC §5 web-service example (dev + production + provenance), reader & selector tests — `swift/Tests/`
-- [ ] HC-027 CLI: `hypercode resolve app.hc --hcs config.hcs [--ctx env=production]`
+- [x] HC-027 CLI: `hypercode resolve app.hc --hcs config.hcs [--ctx key=value]` — prints the resolved tree with provenance; `swift/Examples/service.{hc,hcs}` — `swift/Sources/HypercodeCLI/`
 
 ## M3 — Emit & validation
 - [ ] HC-030 Generic emit: resolved graph → canonical IR (YAML/JSON), schema-agnostic, marked generated
