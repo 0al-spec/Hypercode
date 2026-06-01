@@ -20,21 +20,22 @@ The goal is to provide an unambiguous reference for tool developers, parser auth
 
 ```bnf
 <hypercode>      ::= { <command-line> }
-<command-line>   ::= [<indent>] <command> <newline> [<block>]
+<command-line>   ::= <command> <newline> [<block>]
 <command>        ::= <identifier> [<class>] [<id>]
 <class>          ::= "." <identifier>
 <id>             ::= "#" <identifier>
-<block>          ::= <indent-block> { <command-line> }
-<indent-block>   ::= <indent>+
+<block>          ::= <INDENT> { <command-line> } <DEDENT>
 <identifier>     ::= <letter> { <letter> | <digit> | "_" | "-" }
 <letter>         ::= "A" | ... | "Z" | "a" | ... | "z"
 <digit>          ::= "0" | ... | "9"
+<newline>        ::= "\n"
+<INDENT>         ::= (synthetic token emitted by the lexer when <indent> depth increases)
+<DEDENT>         ::= (synthetic token emitted by the lexer when <indent> depth decreases)
 <indent>         ::= <spaces> | <tabs>
 <spaces>         ::= <space> { <space> }
 <tabs>           ::= <tab> { <tab> }
 <space>          ::= " "
 <tab>            ::= "\t"
-<newline>        ::= "\n"
 ```
 
 ## 2. Example Input
@@ -104,6 +105,7 @@ Root
 
 - Identifiers must not contain whitespace or special symbols.
 - Indentation must be consistent (e.g., 2 or 4 spaces, or tabs—but not mixed).
+- Indentation is significant (off-side rule): a nested `<block>` must be indented deeper than its parent `<command-line>`. The lexer reads each line's leading `<indent>`, tracks it on an indentation stack, and emits the synthetic `<INDENT>` / `<DEDENT>` tokens when the depth increases or decreases. Because this context-sensitive relationship cannot be expressed in pure BNF, indentation handling is delegated to the lexer (see `HypercodeLexer.g4`).
 - No support for inline attributes or arguments in `.hc` files (these belong in `.hcs`).
 
 ## 6. Future Work
