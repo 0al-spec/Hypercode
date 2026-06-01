@@ -65,7 +65,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 
 ## M4 — Consumers & compilation (downstream)
 - [x] HC-040 White-label example: one `.hc`, swap `--ctx client=…` → different brand builds — `swift/Examples/whitelabel/` + `WhiteLabelTests`
-- [ ] HC-041 Backends/adapters pattern doc: resolved graph → target language/format
+- [x] HC-041 Backends/adapters pattern doc: resolved graph → target language/format — `DOCS/Backends.md`
 - [ ] HC-042 Ontology path (in the **Ontology** repo): `ontologyc import-hypercode` maps resolved graph → DomainOntologyPackage YAML; `--schema` stays consumer-side
 
 ## M5 — Formal verification 🅿️
@@ -73,11 +73,11 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 
 ## M6 — Shared grammar-core (sequenced: Hypercode first, then refactor consumers)
 - [x] HC-060 Canonical `.hc` grammar-core as layered Specifications — `swift/Sources/Hypercode/Specifications/` (Lexical: `IdentifierSpec`; Syntactic: `CommandSpec`, line specs; Decisions: `LineKindDecision`). Indentation stays in the hand-rolled lexer front.
-- [ ] HC-061 Reconcile dialect differences with Hyperprompt (quotes / references / paths): core vs dialect extensions
+- [x] HC-061 Dialect analysis (core vs Hyperprompt quotes/references/paths) + extraction proposal — `DOCS/Dialects.md` *(core-vs-dialect surface decision flagged for you)*
 - [ ] HC-062 Refactor Hyperprompt to depend on Hypercode's grammar-core (after it stabilizes)
 - [ ] HC-063 Refactor Ontology's Hypercode import path onto the shared grammar-core
 
 ## Cross-cutting
 - [x] HC-090 Swift CI workflow (build + test) — `.github/workflows/swift.yml`
-- [ ] HC-091 Confirm repo layout for the Swift implementation (currently `swift/`)
-- [ ] HC-092 Relabel the ANTLR/Java implementation as a conformance oracle once Swift reaches parity
+- [x] HC-091 Repo layout documented (`swift/` reference impl) — `DOCS/Architecture.md`
+- [x] HC-092 ANTLR/Java relabeled as a conformance oracle — `DOCS/Architecture.md`
