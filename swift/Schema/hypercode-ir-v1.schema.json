@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0al-spec.org/hypercode/ir/v1",
+  "title": "Hypercode Resolved-Graph IR v1",
+  "description": "The canonical, schema-agnostic representation emitted by `hypercode emit`. This is the cross-implementation contract: any consumer (Ontology, Hyperprompt, ...) reads this shape rather than re-implementing the .hc/.hcs parser and resolver.",
+  "type": "object",
+  "required": ["version", "nodes"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": "hypercode.ir/v1" },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "required": ["type", "properties", "children"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "description": "The command name." },
+        "class": { "type": "string", "description": "Optional .class marker; omitted when absent." },
+        "id": { "type": "string", "description": "Optional #id marker; omitted when absent." },
+        "properties": {
+          "type": "object",
+          "description": "Resolved properties keyed by name.",
+          "additionalProperties": { "$ref": "#/$defs/resolvedValue" }
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/node" }
+        }
+      }
+    },
+    "resolvedValue": {
+      "type": "object",
+      "required": ["value", "from", "line"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "string", "description": "The cascade-resolved value." },
+        "from": { "type": "string", "description": "The winning selector (provenance)." },
+        "line": { "type": "integer", "description": "Source line of the winning rule." }
+      }
+    }
+  }
+}

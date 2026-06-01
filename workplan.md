@@ -49,7 +49,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-014 Adopt SpecificationCore + seed the `Specifications/` layer (`IdentifierSpec`) — `swift/Sources/Hypercode/Specifications/`
 
 ## M2 — Cascade resolution ✅ core (on SpecificationCore)
-- [ ] HC-020 Resolution semantics as specifications + conformance fixtures; thin `Hypercode_Resolution.md` narrating specificity/cascade
+- [x] HC-020 Resolution semantics — `EBNF/Hypercode_Resolution.md` (operational semantics narrating the executable specs; conformance = `swift/Examples` + `CascadeResolverTests`)
 - [x] HC-021 `.hcs` reader → cascade-sheet model (selectors, rules, `@dimension[value]` blocks) — `swift/Sources/Hypercode/HCS/CascadeSheet*.swift`
 - [x] HC-022 Selector matching as `Specification`s over nodes: type / `.class` / `#id` / child (`>`) — `HCS/SelectorSpecs.swift`
 - [x] HC-023 Specificity + cascade as a `DecisionSpec`: `(specificity, source-order)` → value + provenance — `HCS/Resolver.swift` *(origin/importance deferred until there's syntax for it)*
@@ -61,7 +61,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 ## M3 — Emit & validation
 - [x] HC-030 Generic emit: resolved graph → canonical IR `hypercode.ir/v1` (JSON/YAML), schema-agnostic, hand-rolled — `swift/Sources/Hypercode/Emit/`, CLI `emit`
 - [x] HC-031 `hypercode validate`: id uniqueness (.hc) + dangling-selector warnings (.hcs vs .hc) — `swift/Sources/Hypercode/Validation/`, CLI `validate`
-- [ ] HC-032 Versioned resolved-graph schema (the cross-impl contract) + valid/invalid fixtures
+- [x] HC-032 Versioned resolved-graph schema (cross-impl contract) + fixtures — `swift/Schema/hypercode-ir-v1.schema.json` *(automated schema-validation in CI deferred)*
 
 ## M4 — Consumers & compilation (downstream)
 - [ ] HC-040 White-label example end-to-end: one `.hc`, swap `.hcs` → different builds
