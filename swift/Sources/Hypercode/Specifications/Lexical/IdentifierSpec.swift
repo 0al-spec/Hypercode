@@ -3,10 +3,7 @@ import SpecificationCore
 /// Satisfied by strings that form a valid Hypercode identifier:
 /// `identifier ::= letter { letter | digit | "_" | "-" }` (ASCII).
 ///
-/// First adopter of SpecificationCore in the Hypercode core. Grammar and
-/// cascade rules are expressed as composable specifications (the 0AL house
-/// style); richer lexical / syntactic / semantic specs will follow as the
-/// shared grammar-core grows here before Hyperprompt and Ontology adopt it.
+/// The lexical building block reused by the syntactic command specifications.
 public struct IdentifierSpec: Specification {
     public init() {}
 
