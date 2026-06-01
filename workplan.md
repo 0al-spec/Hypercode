@@ -59,7 +59,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-027 CLI: `hypercode resolve app.hc --hcs config.hcs [--ctx key=value]` — prints the resolved tree with provenance; `swift/Examples/service.{hc,hcs}` — `swift/Sources/HypercodeCLI/`
 
 ## M3 — Emit & validation
-- [ ] HC-030 Generic emit: resolved graph → canonical IR (YAML/JSON), schema-agnostic, marked generated
+- [x] HC-030 Generic emit: resolved graph → canonical IR `hypercode.ir/v1` (JSON/YAML), schema-agnostic, hand-rolled — `swift/Sources/Hypercode/Emit/`, CLI `emit`
 - [x] HC-031 `hypercode validate`: id uniqueness (.hc) + dangling-selector warnings (.hcs vs .hc) — `swift/Sources/Hypercode/Validation/`, CLI `validate`
 - [ ] HC-032 Versioned resolved-graph schema (the cross-impl contract) + valid/invalid fixtures
 

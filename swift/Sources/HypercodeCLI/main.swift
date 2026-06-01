@@ -6,6 +6,7 @@ usage:
   hypercode parse    <file.hc>
   hypercode validate <file.hc> [--hcs <file.hcs>]
   hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
+  hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml]
 """
 
 func fail(_ message: String, code: Int32 = 1) -> Never {
@@ -107,6 +108,49 @@ func runValidate(_ args: [String]) throws {
     }
 }
 
+func runEmit(_ args: [String]) throws {
+    var hcPath: String?
+    var hcsPath: String?
+    var context: ResolutionContext = [:]
+    var format: EmitFormat = .json
+
+    var index = 0
+    while index < args.count {
+        switch args[index] {
+        case "--hcs":
+            index += 1
+            guard index < args.count else { fail("error: --hcs needs a path") }
+            hcsPath = args[index]
+        case "--ctx":
+            index += 1
+            guard index < args.count else { fail("error: --ctx needs key=value") }
+            let pair = args[index]
+            guard let equals = pair.firstIndex(of: "=") else {
+                fail("error: --ctx expects key=value, got '\(pair)'")
+            }
+            context[String(pair[..<equals])] = String(pair[pair.index(after: equals)...])
+        case "--format":
+            index += 1
+            guard index < args.count, let parsed = EmitFormat(rawValue: args[index]) else {
+                fail("error: --format expects json|yaml")
+            }
+            format = parsed
+        default:
+            if hcPath == nil { hcPath = args[index] } else {
+                fail("error: unexpected argument '\(args[index])'")
+            }
+        }
+        index += 1
+    }
+
+    guard let hcPath else { fail("error: emit needs a .hc file\n\n\(usage)", code: 64) }
+
+    let forest = try Parser(source: readSource(hcPath)).parse()
+    let sheet = try hcsPath.map { try CascadeSheetReader().read(readSource($0)) } ?? CascadeSheet(rules: [])
+    let resolved = Resolver(sheet: sheet, context: context).resolve(forest)
+    print(Emitter().emit(resolved, as: format), terminator: "")
+}
+
 let arguments = Array(CommandLine.arguments.dropFirst())
 guard let command = arguments.first else {
     fail(usage, code: 64)
@@ -118,6 +162,8 @@ do {
         try runResolve(Array(arguments.dropFirst()))
     case "validate":
         try runValidate(Array(arguments.dropFirst()))
+    case "emit":
+        try runEmit(Array(arguments.dropFirst()))
     case "parse":
         guard arguments.count >= 2 else { fail(usage, code: 64) }
         try runParse(arguments[1])
