@@ -3,9 +3,8 @@ import Hypercode
 
 /// A minimal Language Server Protocol server over stdio (JSON-RPC 2.0).
 ///
-/// Scope (HC-101): document lifecycle + live diagnostics. On open/change/save it
-/// parses (`.hc`) or reads (`.hcs`) the document text and publishes diagnostics.
-/// Hover / go-to-definition come later, on the same server.
+/// Capabilities: document lifecycle, live diagnostics (HC-101),
+/// completion (HC-103) and hover (HC-103).
 final class LSPServer {
     private var documents: [String: String] = [:]   // uri -> text
     private var buffer = Data()
@@ -26,8 +25,12 @@ final class LSPServer {
         case "initialize":
             respond(id: id, result: [
                 "capabilities": [
-                    // Object form so clients enable open/close/save, not just change.
                     "textDocumentSync": ["openClose": true, "change": 1, "save": true],
+                    "completionProvider": [
+                        "triggerCharacters": [".", "#"],
+                        "resolveProvider": false,
+                    ],
+                    "hoverProvider": true,
                 ],
                 "serverInfo": ["name": "hypercode", "version": "0.4.0"],
             ])
@@ -59,12 +62,46 @@ final class LSPServer {
                 send(["jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
                       "params": ["uri": uri, "diagnostics": []]])
             }
+        case "textDocument/completion":
+            if let params = message["params"] as? [String: Any],
+               let uri = (params["textDocument"] as? [String: Any])?["uri"] as? String,
+               let pos = params["position"] as? [String: Any],
+               let line = pos["line"] as? Int,
+               let char = pos["character"] as? Int,
+               let text = documents[uri] {
+                respond(id: id, result: completionItems(uri: uri, text: text, line: line, char: char))
+            } else {
+                respond(id: id, result: [])
+            }
+        case "textDocument/hover":
+            if let params = message["params"] as? [String: Any],
+               let uri = (params["textDocument"] as? [String: Any])?["uri"] as? String,
+               let pos = params["position"] as? [String: Any],
+               let line = pos["line"] as? Int,
+               let char = pos["character"] as? Int,
+               let text = documents[uri] {
+                if let hover = hoverResult(uri: uri, text: text, line: line, char: char) {
+                    respond(id: id, result: hover)
+                } else {
+                    respond(id: id, result: NSNull())
+                }
+            } else {
+                respond(id: id, result: NSNull())
+            }
         case "shutdown":
             respond(id: id, result: NSNull())
         case "exit":
             exit(0)
         default:
-            break
+            if let id {
+                // JSON-RPC error: Method not found (-32601)
+                var msg: [String: Any] = [
+                    "jsonrpc": "2.0",
+                    "error": ["code": -32601, "message": "Method not found: \(method ?? "")"],
+                ]
+                msg["id"] = id
+                send(msg)
+            }
         }
     }
 
@@ -90,6 +127,79 @@ final class LSPServer {
         ]
     }
 
+    // MARK: - Completion
+
+    /// Returns completion items for the cursor position.
+    /// - After `.`: class names used in this document.
+    /// - After `#`: id names used in this document.
+    /// - Otherwise: type names (command identifiers) from the document.
+    private func completionItems(uri: String, text: String, line: Int, char: Int) -> [[String: Any]] {
+        guard DocumentKind(path: uri) == .hypercode else { return [] }
+
+        // Compute the prefix using UTF-16 code-unit count (LSP character unit).
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        let currentLine = line < lines.count ? lines[line] : ""
+        let utf16 = currentLine.utf16
+        let prefixEnd = utf16.index(utf16.startIndex, offsetBy: min(char, utf16.count))
+        let prefix = String(utf16[utf16.startIndex..<prefixEnd]) ?? ""
+
+        // Parse leniently: the document may be incomplete after a trigger char.
+        let forest = (try? Parser(source: text).parse()) ?? []
+        var types: [String] = []
+        var classes: [String] = []
+        var ids: [String] = []
+        collectNames(forest, types: &types, classes: &classes, ids: &ids)
+
+        if prefix.hasSuffix(".") {
+            return classes.map { item($0, kind: 18, detail: "class") }   // 18 = Reference
+        } else if prefix.hasSuffix("#") {
+            return ids.map { item($0, kind: 6, detail: "id") }           // 6 = Variable
+        } else {
+            return types.map { item($0, kind: 7, detail: "command") }    // 7 = Class
+        }
+    }
+
+    private func item(_ label: String, kind: Int, detail: String) -> [String: Any] {
+        ["label": label, "kind": kind, "detail": detail]
+    }
+
+    private func collectNames(_ nodes: [Command], types: inout [String], classes: inout [String], ids: inout [String]) {
+        for node in nodes {
+            if !types.contains(node.type) { types.append(node.type) }
+            if let c = node.className, !classes.contains(c) { classes.append(c) }
+            if let i = node.id, !ids.contains(i) { ids.append(i) }
+            collectNames(node.children, types: &types, classes: &classes, ids: &ids)
+        }
+    }
+
+    // MARK: - Hover
+
+    /// Returns Markdown hover content for the node at the given line.
+    /// Hover is line-based: `char` is accepted for protocol conformance but not used.
+    private func hoverResult(uri: String, text: String, line: Int, char _: Int) -> [String: Any]? {
+        guard DocumentKind(path: uri) == .hypercode,
+              let forest = try? Parser(source: text).parse(),
+              let node = findNode(forest, atLine: line + 1)  // LSP 0-based → 1-based
+        else { return nil }
+
+        var md = "**`\(node.type)`**"
+        if let c = node.className { md += "  \nclass: `.\(c)`" }
+        if let i = node.id { md += "  \nid: `#\(i)`" }
+        if !node.children.isEmpty { md += "  \n\(node.children.count) child(ren)" }
+
+        // `range` is optional in LSP; omit it rather than emit hard-coded bounds.
+        return ["contents": ["kind": "markdown", "value": md]]
+    }
+
+    /// Finds the deepest node whose source line matches (1-based).
+    private func findNode(_ nodes: [Command], atLine line: Int) -> Command? {
+        for node in nodes {
+            if let found = findNode(node.children, atLine: line) { return found }
+            if node.line == line { return node }
+        }
+        return nil
+    }
+
     // MARK: - JSON-RPC framing (Content-Length over stdio)
 
     private func respond(id: Any?, result: Any) {
@@ -111,19 +221,16 @@ final class LSPServer {
                 if let object = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] {
                     return object
                 }
-                continue // malformed frame; skip
+                continue
             }
             let chunk = FileHandle.standardInput.availableData
-            if chunk.isEmpty { return nil } // EOF
+            if chunk.isEmpty { return nil }
             buffer.append(chunk)
         }
     }
 
-    /// Extracts one complete message body from the buffer, or `nil` if more
-    /// input is needed.
     private func nextBody() -> Data? {
         guard let headerRange = buffer.range(of: Data("\r\n\r\n".utf8)) else { return nil }
-
         let header = String(decoding: buffer[buffer.startIndex..<headerRange.lowerBound], as: UTF8.self)
         var contentLength = 0
         for line in header.split(whereSeparator: { $0 == "\r" || $0 == "\n" }) {
@@ -131,12 +238,11 @@ final class LSPServer {
                 contentLength = Int(line.dropFirst("content-length:".count).trimmingCharacters(in: .whitespaces)) ?? 0
             }
         }
-
         let bodyStart = headerRange.upperBound
         guard buffer.distance(from: bodyStart, to: buffer.endIndex) >= contentLength else { return nil }
         let bodyEnd = buffer.index(bodyStart, offsetBy: contentLength)
         let body = Data(buffer[bodyStart..<bodyEnd])
-        buffer = Data(buffer[bodyEnd...])   // re-base the remaining buffer
+        buffer = Data(buffer[bodyEnd...])
         return body
     }
 }

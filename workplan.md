@@ -66,7 +66,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 ## M4 — Consumers & compilation (downstream)
 - [x] HC-040 White-label example: one `.hc`, swap `--ctx client=…` → different brand builds — `Examples/whitelabel/` + `WhiteLabelTests`
 - [x] HC-041 Backends/adapters pattern doc: resolved graph → target language/format — `DOCS/Backends.md`
-- [ ] HC-042 Ontology path (in the **Ontology** repo): `ontologyc import-hypercode` maps resolved graph → DomainOntologyPackage YAML; `--schema` stays consumer-side
+- 🅿️ HC-042 Ontology path (in the **Ontology** repo): `ontologyc import-hypercode` maps resolved graph → DomainOntologyPackage YAML; `--schema` stays consumer-side *(blocked: awaiting decision on Ontology application areas)*
 
 ## M5 — Formal verification 🅿️
 - [x] HC-050 Lean 4 cascade oracle — `SPEC/lean/HypercodeOracle.lean`: executable model, machine-checked agreement with the Swift service example (`native_decide`), kernel-checked order facts, and a `cascade_total` theorem *(generic order-independence proof = future)*
@@ -74,14 +74,14 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 ## M6 — Shared grammar-core (sequenced: Hypercode first, then refactor consumers)
 - [x] HC-060 Canonical `.hc` grammar-core as layered Specifications — `Sources/Hypercode/Specifications/` (Lexical: `IdentifierSpec`; Syntactic: `CommandSpec`, line specs; Decisions: `LineKindDecision`). Indentation stays in the hand-rolled lexer front.
 - [x] HC-061 Dialect analysis (core vs Hyperprompt quotes/references/paths) + extraction proposal — `DOCS/Dialects.md` *(core-vs-dialect surface decision flagged for you)*
-- [ ] HC-062 Refactor Hyperprompt to depend on Hypercode's grammar-core (after it stabilizes)
-- [ ] HC-063 Refactor Ontology's Hypercode import path onto the shared grammar-core
+- 🅿️ HC-062 Hyperprompt lives as an independent dialect (decision A: core stays minimal, Hyperprompt not refactored) *(closed by design — Hyperprompt's grammar is a different language, not a duplicate)*
+- 🅿️ HC-063 Refactor Ontology's Hypercode import path onto the shared grammar-core *(blocked: awaiting Ontology application decision)*
 
 ## M7 — Diagnostics & LSP (VS Code)
 - [x] HC-100 Structured diagnostics: unified `Diagnostic` (severity, code, source range), LSP-shaped JSON + editor-parseable text, CLI `--diagnostics text|json` — `Sources/Hypercode/Diagnostics/`
 - [x] HC-101 Minimal Swift LSP server (`hypercode lsp`): JSON-RPC over stdio, `initialize`, document sync (didOpen/didChange/didSave/didClose), live `publishDiagnostics` — `Sources/HypercodeCLI/LSPServer.swift` + shared `diagnostics(for:text:)` in the library
 - [x] HC-102 Thin VS Code extension on `vscode-languageclient` launching `hypercode lsp` — `editors/vscode/` (languages `.hc`/`.hcs`, `hypercode.serverPath` setting); compiled in CI (`.github/workflows/vscode-extension.yml`)
-- [ ] HC-103 Hover / go-to-definition (later, same server)
+- [x] HC-103 Completion (type/class/id from AST, `.` and `#` triggers) + hover (Markdown: type/class/id/children) — `LSPServer.swift`
 
 *(Aim straight for LSP — the standard for VS Code & editor-agnostic. Hyperprompt's custom CLI+JSON-RPC was a documented MVP stopgap; see its ADR-001.)*
 
