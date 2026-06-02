@@ -30,17 +30,17 @@ jobs:
 
       - name: Build documentation
         run: |
-          swift package --allow-writing-to-directory ./docs \
+          swift package --allow-writing-to-directory ./site \
             generate-documentation \
             --target Hypercode \
-            --output-path ./docs \
+            --output-path ./site \
             --transform-for-static-hosting \
             --hosting-base-path Hypercode
 
       - name: Add .nojekyll and index redirect
         run: |
-          touch docs/.nojekyll
-          cat > docs/index.html << 'EOF'
+          touch site/.nojekyll
+          cat > site/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
           <head>
@@ -60,7 +60,7 @@ jobs:
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./docs"
+          path: "./site"
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
