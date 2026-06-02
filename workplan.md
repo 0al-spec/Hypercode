@@ -79,7 +79,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 
 ## M7 — Diagnostics & LSP (VS Code)
 - [x] HC-100 Structured diagnostics: unified `Diagnostic` (severity, code, source range), LSP-shaped JSON + editor-parseable text, CLI `--diagnostics text|json` — `Sources/Hypercode/Diagnostics/`
-- [ ] HC-101 Minimal Swift LSP server (`hypercode lsp`): JSON-RPC over stdio, document sync, `publishDiagnostics`
+- [x] HC-101 Minimal Swift LSP server (`hypercode lsp`): JSON-RPC over stdio, `initialize`, document sync (didOpen/didChange/didSave/didClose), live `publishDiagnostics` — `Sources/HypercodeCLI/LSPServer.swift` + shared `diagnostics(for:text:)` in the library
 - [ ] HC-102 Thin VS Code extension on `vscode-languageclient` that launches the server
 - [ ] HC-103 Hover / go-to-definition (later, same server)
 
