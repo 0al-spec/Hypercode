@@ -7,6 +7,7 @@ usage:
   hypercode validate <file.hc> [--hcs <file.hcs>]
   hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
   hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml]
+  hypercode lsp                                                    # language server (LSP over stdio)
 
 global: [--diagnostics text|json]
 """
@@ -196,6 +197,8 @@ do {
         try runValidate(Array(arguments.dropFirst()))
     case "emit":
         try runEmit(Array(arguments.dropFirst()))
+    case "lsp":
+        LSPServer().run()
     case "parse":
         guard arguments.count >= 2 else { fail(usage, code: 64) }
         try runParse(arguments[1])
