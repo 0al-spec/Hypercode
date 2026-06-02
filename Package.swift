@@ -14,6 +14,7 @@ let package = Package(
         // SpecificationCore — the 0AL Specification-pattern foundation; the
         // Hypercode grammar and cascade rules are expressed as composable specs.
         .package(url: "https://github.com/SoundBlaster/SpecificationCore", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
     ],
     targets: [
         .target(
