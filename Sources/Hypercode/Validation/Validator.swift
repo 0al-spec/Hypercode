@@ -1,24 +1,5 @@
 import SpecificationCore
 
-/// Severity of a validation ``Diagnostic``.
-public enum Severity: String, Sendable {
-    case error
-    case warning
-}
-
-/// A single validation finding.
-public struct Diagnostic: Equatable, Sendable {
-    public let severity: Severity
-    public let message: String
-    public let line: Int?
-
-    public init(severity: Severity, message: String, line: Int? = nil) {
-        self.severity = severity
-        self.message = message
-        self.line = line
-    }
-}
-
 /// Semantic validation of a `.hc` document and (optionally) a `.hcs` sheet
 /// against it. Syntactic validity is already guaranteed by the parser/reader;
 /// these checks catch document-level mistakes.
@@ -37,8 +18,9 @@ public struct Validator {
                         diagnostics.append(
                             Diagnostic(
                                 severity: .error,
+                                code: "HC3001",
                                 message: "duplicate id '#\(id)' (first defined at line \(firstLine))",
-                                line: node.line
+                                range: SourceRange(SourcePosition(line: node.line, column: 1))
                             )
                         )
                     } else {
@@ -58,7 +40,7 @@ public struct Validator {
         sheet.rules.compactMap { rule in
             anyNode(forest, ancestors: [], matches: selectorSpec(rule.selector))
                 ? nil
-                : Diagnostic(severity: .warning, message: "selector '\(rule.selector)' matches no node", line: rule.line)
+                : Diagnostic(severity: .warning, code: "HC3002", message: "selector '\(rule.selector)' matches no node", range: SourceRange(SourcePosition(line: rule.line, column: 1)))
         }
     }
 

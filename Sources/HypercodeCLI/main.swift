@@ -7,7 +7,12 @@ usage:
   hypercode validate <file.hc> [--hcs <file.hcs>]
   hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
   hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml]
+
+global: [--diagnostics text|json]
 """
+
+var diagnosticsFormat: DiagnosticFormat = .text
+var currentInputFile: String?
 
 func fail(_ message: String, code: Int32 = 1) -> Never {
     FileHandle.standardError.write(Data((message + "\n").utf8))
@@ -15,6 +20,7 @@ func fail(_ message: String, code: Int32 = 1) -> Never {
 }
 
 func readSource(_ path: String) -> String {
+    currentInputFile = path
     guard
         let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
         let text = String(data: data, encoding: .utf8)
@@ -95,15 +101,17 @@ func runValidate(_ args: [String]) throws {
         diagnostics += validator.validate(sheet, against: forest)
     }
 
-    guard !diagnostics.isEmpty else {
-        print("ok: no issues found")
-        return
+    let located = diagnostics.map {
+        Diagnostic(severity: $0.severity, code: $0.code, message: $0.message,
+                   file: $0.file ?? hcPath, range: $0.range)
     }
-    for diagnostic in diagnostics {
-        let location = diagnostic.line.map { "line \($0): " } ?? ""
-        print("\(diagnostic.severity.rawValue): \(location)\(diagnostic.message)")
+    switch diagnosticsFormat {
+    case .json:
+        print(DiagnosticsRenderer.render(located, as: .json))
+    case .text:
+        print(located.isEmpty ? "ok: no issues found" : DiagnosticsRenderer.render(located, as: .text))
     }
-    if diagnostics.contains(where: { $0.severity == .error }) {
+    if located.contains(where: { $0.severity == .error }) {
         exit(1)
     }
 }
@@ -151,7 +159,26 @@ func runEmit(_ args: [String]) throws {
     print(Emitter().emit(resolved, as: format), terminator: "")
 }
 
-let arguments = Array(CommandLine.arguments.dropFirst())
+// Pull the global `--diagnostics <format>` flag out of the argument list.
+let arguments: [String] = {
+    let raw = Array(CommandLine.arguments.dropFirst())
+    var rest: [String] = []
+    var index = 0
+    while index < raw.count {
+        if raw[index] == "--diagnostics" {
+            index += 1
+            guard index < raw.count, let format = DiagnosticFormat(rawValue: raw[index]) else {
+                fail("error: --diagnostics expects text|json")
+            }
+            diagnosticsFormat = format
+        } else {
+            rest.append(raw[index])
+        }
+        index += 1
+    }
+    return rest
+}()
+
 guard let command = arguments.first else {
     fail(usage, code: 64)
 }
@@ -173,6 +200,10 @@ do {
         // Backwards-compatible shorthand: `hypercode <file.hc>`.
         try runParse(command)
     }
+} catch let error as DiagnosticConvertible {
+    let rendered = DiagnosticsRenderer.render([error.diagnostic(file: currentInputFile)], as: diagnosticsFormat)
+    FileHandle.standardError.write(Data((rendered + "\n").utf8))
+    exit(1)
 } catch {
     fail("\(error)")
 }

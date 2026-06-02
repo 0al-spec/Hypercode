@@ -77,6 +77,14 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [ ] HC-062 Refactor Hyperprompt to depend on Hypercode's grammar-core (after it stabilizes)
 - [ ] HC-063 Refactor Ontology's Hypercode import path onto the shared grammar-core
 
+## M7 — Diagnostics & LSP (VS Code)
+- [x] HC-100 Structured diagnostics: unified `Diagnostic` (severity, code, source range), LSP-shaped JSON + editor-parseable text, CLI `--diagnostics text|json` — `Sources/Hypercode/Diagnostics/`
+- [ ] HC-101 Minimal Swift LSP server (`hypercode lsp`): JSON-RPC over stdio, document sync, `publishDiagnostics`
+- [ ] HC-102 Thin VS Code extension on `vscode-languageclient` that launches the server
+- [ ] HC-103 Hover / go-to-definition (later, same server)
+
+*(Aim straight for LSP — the standard for VS Code & editor-agnostic. Hyperprompt's custom CLI+JSON-RPC was a documented MVP stopgap; see its ADR-001.)*
+
 ## Cross-cutting
 - [x] HC-090 Swift CI workflow (build + test) — `.github/workflows/swift.yml`
 - [x] HC-091 Repo layout documented (root Swift package) — `DOCS/Architecture.md`
