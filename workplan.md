@@ -39,7 +39,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-001 `.hc` BNF syntax spec, incl. INDENT/DEDENT block rule — `EBNF/Hypercode_Syntax.md` *(PR #5, open)*
 - [x] HC-002 ANTLR reference grammar + `.hc` test suite — `EBNF/`
 - [x] HC-003 CI running the grammar tests — `.github/workflows/ci.yml` *(PR #5, open)*
-- [ ] HC-004 Merge PR #5 into `main`
+- [x] HC-004 Merge PR #5 into `main` (merged by maintainer)
 
 ## M1 — Swift reference implementation: parsing ✅
 - [x] HC-010 `.hc` lexer with indent/dedent (off-side rule) — `swift/Sources/Hypercode/Lexer.swift`
