@@ -13,7 +13,7 @@ The IR is a **generated artifact** — `.hc` + `.hcs` remain the source of truth
 ## Regenerate the fixture
 
 ```bash
-swift run --package-path swift hypercode emit \
-  swift/Examples/service.hc --hcs swift/Examples/service.hcs \
-  --ctx env=production --format json > swift/Schema/fixtures/service.production.ir.json
+swift run hypercode emit \
+  Examples/service.hc --hcs Examples/service.hcs \
+  --ctx env=production --format json > Schema/fixtures/service.production.ir.json
 ```

@@ -2,7 +2,7 @@
 # Hypercode cascade resolution — Lean 4 oracle
 
 An executable model of the Hypercode cascade (the same rules implemented in
-`swift/Sources/Hypercode/HCS/`). It serves as a machine-checked oracle:
+`Sources/Hypercode/HCS/`). It serves as a machine-checked oracle:
 
 * the service example resolves to exactly the values the Swift implementation
   produces (checked by `native_decide`), and
@@ -157,7 +157,7 @@ partial def resolveNode (rules : List Rule) (ctx : Context) (n : Node) (anc : Li
 def resolve (rules : List Rule) (ctx : Context) (forest : List Node) : List ResolvedNode :=
   forest.map (fun n => resolveNode rules ctx n [])
 
-/-! ## The service example (mirrors `swift/Examples/service.{hc,hcs}`) -/
+/-! ## The service example (mirrors `Examples/service.{hc,hcs}`) -/
 
 def service : List Node :=
   [⟨"Service", none, none,

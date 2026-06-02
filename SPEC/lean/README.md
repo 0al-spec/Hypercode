@@ -1,7 +1,7 @@
 # Hypercode cascade oracle (Lean 4)
 
 A machine-checked executable model of the cascade resolver (the Swift
-implementation under `swift/Sources/Hypercode/HCS/`).
+implementation under `Sources/Hypercode/HCS/`).
 
 `HypercodeOracle.lean` checks, at `lake build` time:
 

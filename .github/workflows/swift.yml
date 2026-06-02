@@ -13,7 +13,6 @@ jobs:
         run: swift --version
 
       - name: Build
-        run: swift build --package-path swift
-
+        run: swift build
       - name: Test
-        run: swift test --package-path swift
+        run: swift test
