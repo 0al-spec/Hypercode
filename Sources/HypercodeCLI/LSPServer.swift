@@ -93,7 +93,15 @@ final class LSPServer {
         case "exit":
             exit(0)
         default:
-            if let id { respond(id: id, result: NSNull()) }
+            if let id {
+                // JSON-RPC error: Method not found (-32601)
+                var msg: [String: Any] = [
+                    "jsonrpc": "2.0",
+                    "error": ["code": -32601, "message": "Method not found: \(method ?? "")"],
+                ]
+                msg["id"] = id
+                send(msg)
+            }
         }
     }
 
@@ -124,20 +132,24 @@ final class LSPServer {
     /// Returns completion items for the cursor position.
     /// - After `.`: class names used in this document.
     /// - After `#`: id names used in this document.
-    /// - Otherwise: type names (command identifiers) from the current indent level.
-    private func completionItems(uri: String, text: String, line: Int, char: Int, ) -> [[String: Any]] {
+    /// - Otherwise: type names (command identifiers) from the document.
+    private func completionItems(uri: String, text: String, line: Int, char: Int) -> [[String: Any]] {
         guard DocumentKind(path: uri) == .hypercode else { return [] }
+
+        // Compute the prefix using UTF-16 code-unit count (LSP character unit).
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         let currentLine = line < lines.count ? lines[line] : ""
-        let prefix = char > 0 ? String(currentLine.prefix(char)) : ""
+        let utf16 = currentLine.utf16
+        let prefixEnd = utf16.index(utf16.startIndex, offsetBy: min(char, utf16.count))
+        let prefix = String(utf16[utf16.startIndex..<prefixEnd]) ?? ""
 
-        guard let forest = try? Parser(source: text).parse() else { return [] }
+        // Parse leniently: the document may be incomplete after a trigger char.
+        let forest = (try? Parser(source: text).parse()) ?? []
         var types: [String] = []
         var classes: [String] = []
         var ids: [String] = []
         collectNames(forest, types: &types, classes: &classes, ids: &ids)
 
-        // Choose what to complete based on the character just typed.
         if prefix.hasSuffix(".") {
             return classes.map { item($0, kind: 18, detail: "class") }   // 18 = Reference
         } else if prefix.hasSuffix("#") {
@@ -162,8 +174,9 @@ final class LSPServer {
 
     // MARK: - Hover
 
-    /// Returns Markdown hover content for the node at (line, char).
-    private func hoverResult(uri: String, text: String, line: Int, char: Int) -> [String: Any]? {
+    /// Returns Markdown hover content for the node at the given line.
+    /// Hover is line-based: `char` is accepted for protocol conformance but not used.
+    private func hoverResult(uri: String, text: String, line: Int, char _: Int) -> [String: Any]? {
         guard DocumentKind(path: uri) == .hypercode,
               let forest = try? Parser(source: text).parse(),
               let node = findNode(forest, atLine: line + 1)  // LSP 0-based → 1-based
@@ -174,13 +187,8 @@ final class LSPServer {
         if let i = node.id { md += "  \nid: `#\(i)`" }
         if !node.children.isEmpty { md += "  \n\(node.children.count) child(ren)" }
 
-        return [
-            "contents": ["kind": "markdown", "value": md],
-            "range": [
-                "start": ["line": line, "character": 0],
-                "end": ["line": line, "character": 1000],
-            ],
-        ]
+        // `range` is optional in LSP; omit it rather than emit hard-coded bounds.
+        return ["contents": ["kind": "markdown", "value": md]]
     }
 
     /// Finds the deepest node whose source line matches (1-based).
