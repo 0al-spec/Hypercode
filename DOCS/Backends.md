@@ -13,7 +13,7 @@ Compilation to a concrete language or format is **not** part of Hypercode core.
 ## Rules
 
 - A **backend/adapter** consumes the IR (`hypercode.ir/v1`, see
-  [`swift/Schema/`](../swift/Schema/)) and emits one target. It lives in the
+  [`Schema/`](../Schema/)) and emits one target. It lives in the
   **consumer** repo, never in Hypercode.
 - Hypercode emits only the canonical, schema-agnostic IR (`hypercode emit`).
 - The target is a build-time choice (a flag on the consumer's tool), not

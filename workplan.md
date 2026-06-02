@@ -42,29 +42,29 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-004 Merge PR #5 into `main` (merged by maintainer)
 
 ## M1 — Swift reference implementation: parsing ✅
-- [x] HC-010 `.hc` lexer with indent/dedent (off-side rule) — `swift/Sources/Hypercode/Lexer.swift`
-- [x] HC-011 `.hc` recursive-descent parser → `Command` AST — `swift/Sources/Hypercode/Parser.swift`
-- [x] HC-012 `hypercode` CLI: parse + print tree — `swift/Sources/HypercodeCLI/`
-- [x] HC-013 Lexer/parser tests ported from fixtures (15 green) — `swift/Tests/`
-- [x] HC-014 Adopt SpecificationCore + seed the `Specifications/` layer (`IdentifierSpec`) — `swift/Sources/Hypercode/Specifications/`
+- [x] HC-010 `.hc` lexer with indent/dedent (off-side rule) — `Sources/Hypercode/Lexer.swift`
+- [x] HC-011 `.hc` recursive-descent parser → `Command` AST — `Sources/Hypercode/Parser.swift`
+- [x] HC-012 `hypercode` CLI: parse + print tree — `Sources/HypercodeCLI/`
+- [x] HC-013 Lexer/parser tests ported from fixtures (15 green) — `Tests/`
+- [x] HC-014 Adopt SpecificationCore + seed the `Specifications/` layer (`IdentifierSpec`) — `Sources/Hypercode/Specifications/`
 
 ## M2 — Cascade resolution ✅ core (on SpecificationCore)
-- [x] HC-020 Resolution semantics — `EBNF/Hypercode_Resolution.md` (operational semantics narrating the executable specs; conformance = `swift/Examples` + `CascadeResolverTests`)
-- [x] HC-021 `.hcs` reader → cascade-sheet model (selectors, rules, `@dimension[value]` blocks) — `swift/Sources/Hypercode/HCS/CascadeSheet*.swift`
+- [x] HC-020 Resolution semantics — `EBNF/Hypercode_Resolution.md` (operational semantics narrating the executable specs; conformance = `Examples` + `CascadeResolverTests`)
+- [x] HC-021 `.hcs` reader → cascade-sheet model (selectors, rules, `@dimension[value]` blocks) — `Sources/Hypercode/HCS/CascadeSheet*.swift`
 - [x] HC-022 Selector matching as `Specification`s over nodes: type / `.class` / `#id` / child (`>`) — `HCS/SelectorSpecs.swift`
 - [x] HC-023 Specificity + cascade as a `DecisionSpec`: `(specificity, source-order)` → value + provenance — `HCS/Resolver.swift` *(origin/importance deferred until there's syntax for it)*
 - [x] HC-024 Context activation: `@dimension[value]` guards (env / client) via `Rule.isActive(in:)`
 - [x] HC-025 Resolver: `.hc` + `.hcs` + context → resolved graph with provenance — `HCS/Resolver.swift`
-- [x] HC-026 Resolver tests: RFC §5 web-service example (dev + production + provenance), reader & selector tests — `swift/Tests/`
-- [x] HC-027 CLI: `hypercode resolve app.hc --hcs config.hcs [--ctx key=value]` — prints the resolved tree with provenance; `swift/Examples/service.{hc,hcs}` — `swift/Sources/HypercodeCLI/`
+- [x] HC-026 Resolver tests: RFC §5 web-service example (dev + production + provenance), reader & selector tests — `Tests/`
+- [x] HC-027 CLI: `hypercode resolve app.hc --hcs config.hcs [--ctx key=value]` — prints the resolved tree with provenance; `Examples/service.{hc,hcs}` — `Sources/HypercodeCLI/`
 
 ## M3 — Emit & validation
-- [x] HC-030 Generic emit: resolved graph → canonical IR `hypercode.ir/v1` (JSON/YAML), schema-agnostic, hand-rolled — `swift/Sources/Hypercode/Emit/`, CLI `emit`
-- [x] HC-031 `hypercode validate`: id uniqueness (.hc) + dangling-selector warnings (.hcs vs .hc) — `swift/Sources/Hypercode/Validation/`, CLI `validate`
-- [x] HC-032 Versioned resolved-graph schema (cross-impl contract) + fixtures — `swift/Schema/hypercode-ir-v1.schema.json` *(automated schema-validation in CI deferred)*
+- [x] HC-030 Generic emit: resolved graph → canonical IR `hypercode.ir/v1` (JSON/YAML), schema-agnostic, hand-rolled — `Sources/Hypercode/Emit/`, CLI `emit`
+- [x] HC-031 `hypercode validate`: id uniqueness (.hc) + dangling-selector warnings (.hcs vs .hc) — `Sources/Hypercode/Validation/`, CLI `validate`
+- [x] HC-032 Versioned resolved-graph schema (cross-impl contract) + fixtures — `Schema/hypercode-ir-v1.schema.json` *(automated schema-validation in CI deferred)*
 
 ## M4 — Consumers & compilation (downstream)
-- [x] HC-040 White-label example: one `.hc`, swap `--ctx client=…` → different brand builds — `swift/Examples/whitelabel/` + `WhiteLabelTests`
+- [x] HC-040 White-label example: one `.hc`, swap `--ctx client=…` → different brand builds — `Examples/whitelabel/` + `WhiteLabelTests`
 - [x] HC-041 Backends/adapters pattern doc: resolved graph → target language/format — `DOCS/Backends.md`
 - [ ] HC-042 Ontology path (in the **Ontology** repo): `ontologyc import-hypercode` maps resolved graph → DomainOntologyPackage YAML; `--schema` stays consumer-side
 
@@ -72,12 +72,12 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-050 Lean 4 cascade oracle — `SPEC/lean/HypercodeOracle.lean`: executable model, machine-checked agreement with the Swift service example (`native_decide`), kernel-checked order facts, and a `cascade_total` theorem *(generic order-independence proof = future)*
 
 ## M6 — Shared grammar-core (sequenced: Hypercode first, then refactor consumers)
-- [x] HC-060 Canonical `.hc` grammar-core as layered Specifications — `swift/Sources/Hypercode/Specifications/` (Lexical: `IdentifierSpec`; Syntactic: `CommandSpec`, line specs; Decisions: `LineKindDecision`). Indentation stays in the hand-rolled lexer front.
+- [x] HC-060 Canonical `.hc` grammar-core as layered Specifications — `Sources/Hypercode/Specifications/` (Lexical: `IdentifierSpec`; Syntactic: `CommandSpec`, line specs; Decisions: `LineKindDecision`). Indentation stays in the hand-rolled lexer front.
 - [x] HC-061 Dialect analysis (core vs Hyperprompt quotes/references/paths) + extraction proposal — `DOCS/Dialects.md` *(core-vs-dialect surface decision flagged for you)*
 - [ ] HC-062 Refactor Hyperprompt to depend on Hypercode's grammar-core (after it stabilizes)
 - [ ] HC-063 Refactor Ontology's Hypercode import path onto the shared grammar-core
 
 ## Cross-cutting
 - [x] HC-090 Swift CI workflow (build + test) — `.github/workflows/swift.yml`
-- [x] HC-091 Repo layout documented (`swift/` reference impl) — `DOCS/Architecture.md`
+- [x] HC-091 Repo layout documented (root Swift package) — `DOCS/Architecture.md`
 - [x] HC-092 ANTLR/Java relabeled as a conformance oracle — `DOCS/Architecture.md`

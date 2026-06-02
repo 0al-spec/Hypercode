@@ -1,6 +1,6 @@
 # Hypercode — Core vs Dialects
 
-The reference implementation (`swift/`) defines **core `.hc`**:
+The reference implementation (root Swift package) defines **core `.hc`**:
 
 ```
 command ::= identifier [ "." identifier ] [ "#" identifier ]
@@ -21,7 +21,7 @@ SpecificationCore foundation, adding layers core does not have:
 
 ## Proposal: core vs extensions
 
-1. **Keep core minimal** — the `swift/` grammar-core stays the small, shared base
+1. **Keep core minimal** — the core grammar-core stays the small, shared base
    every consumer can rely on.
 2. **Model dialect features as additive specification layers** on top of core,
    not forks of it. The Specification pattern makes composing optional layers

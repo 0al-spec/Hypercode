@@ -23,7 +23,7 @@ It is the semantic companion to the [syntax specification](Hypercode_Syntax.md)
 
 The rules below are **executable**, not merely prose: in the reference Swift
 implementation each is a SpecificationCore `Specification` / `DecisionSpec`
-object under `swift/Sources/Hypercode/HCS/`. This document narrates those specs
+object under `Sources/Hypercode/HCS/`. This document narrates those specs
 so other implementations can reproduce them.
 
 ## 1. Model
@@ -103,15 +103,15 @@ The whole document resolves by applying this to each top-level node.
 
 ## 7. Conformance
 
-The reference fixtures are [`swift/Examples/service.hc`](../swift/Examples/service.hc)
-and [`service.hcs`](../swift/Examples/service.hcs), resolved in
-`swift/Tests/HypercodeTests/CascadeResolverTests.swift` for both the development
+The reference fixtures are [`Examples/service.hc`](../Examples/service.hc)
+and [`service.hcs`](../Examples/service.hcs), resolved in
+`Tests/HypercodeTests/CascadeResolverTests.swift` for both the development
 context (`{}`) and `env=production`, including specificity override
 (`#main-db` ≻ `Database`), source-order override, non-overridden inheritance,
 and provenance. Any conforming resolver must reproduce those results, e.g.:
 
 ```bash
-hypercode resolve swift/Examples/service.hc --hcs swift/Examples/service.hcs --ctx env=production
+hypercode resolve Examples/service.hc --hcs Examples/service.hcs --ctx env=production
 ```
 
 ## 8. Deferred
