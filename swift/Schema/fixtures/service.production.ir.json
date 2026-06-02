@@ -1,0 +1,78 @@
+{
+  "version": "hypercode.ir/v1",
+  "nodes": [
+    {
+      "type": "Service",
+      "properties": {},
+      "children": [
+        {
+          "type": "Logger",
+          "class": "console",
+          "properties": {
+            "format": {
+              "value": "json",
+              "from": ".console",
+              "line": 19
+            },
+            "level": {
+              "value": "info",
+              "from": "Logger",
+              "line": 16
+            }
+          },
+          "children": []
+        },
+        {
+          "type": "Database",
+          "id": "main-db",
+          "properties": {
+            "driver": {
+              "value": "postgres",
+              "from": "#main-db",
+              "line": 22
+            },
+            "file": {
+              "value": "dev.sqlite3",
+              "from": "Database",
+              "line": 7
+            },
+            "pool_size": {
+              "value": "50",
+              "from": "#main-db",
+              "line": 22
+            }
+          },
+          "children": [
+            {
+              "type": "Connect",
+              "properties": {},
+              "children": []
+            }
+          ]
+        },
+        {
+          "type": "APIServer",
+          "properties": {},
+          "children": [
+            {
+              "type": "Listen",
+              "properties": {
+                "host": {
+                  "value": "0.0.0.0",
+                  "from": "APIServer > Listen",
+                  "line": 26
+                },
+                "port": {
+                  "value": "8080",
+                  "from": "APIServer > Listen",
+                  "line": 26
+                }
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

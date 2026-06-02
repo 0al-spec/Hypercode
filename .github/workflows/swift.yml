@@ -1,0 +1,19 @@
+name: Swift
+
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    name: build & test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build --package-path swift
+
+      - name: Test
+        run: swift test --package-path swift

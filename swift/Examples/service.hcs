@@ -1,0 +1,28 @@
+Logger:
+  level: "debug"
+
+.console:
+  format: "text"
+
+Database:
+  driver: "sqlite"
+  file: "dev.sqlite3"
+
+APIServer > Listen:
+  host: "127.0.0.1"
+  port: 5000
+
+@env[production]:
+  Logger:
+    level: "info"
+
+  .console:
+    format: "json"
+
+  '#main-db':
+    driver: "postgres"
+    pool_size: 50
+
+  APIServer > Listen:
+    host: "0.0.0.0"
+    port: 8080
