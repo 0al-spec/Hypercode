@@ -158,6 +158,8 @@ guard let command = arguments.first else {
 
 do {
     switch command {
+    case "--help", "-h":
+        print(usage)
     case "resolve":
         try runResolve(Array(arguments.dropFirst()))
     case "validate":

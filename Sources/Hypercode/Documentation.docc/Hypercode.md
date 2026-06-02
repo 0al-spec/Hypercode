@@ -21,6 +21,51 @@ context), plus validation and emit. The `hypercode` CLI exposes `parse`,
 See also: the [resolution semantics](https://github.com/0al-spec/Hypercode/blob/main/EBNF/Hypercode_Resolution.md)
 and the [architecture overview](https://github.com/0al-spec/Hypercode/blob/main/DOCS/Architecture.md).
 
+## Usage
+
+Given a structure and a cascade sheet:
+
+```
+# app.hc
+Service
+  Logger.console
+  Database#main-db
+```
+
+```
+# app.hcs
+Logger:
+  level: "debug"
+.console:
+  format: "text"
+
+@env[production]:
+  Logger:
+    level: "info"
+```
+
+Resolve them — the printed tree tags each value with the selector it came from
+(provenance), and swapping the context changes the result without touching the
+`.hc`:
+
+```bash
+$ hypercode resolve app.hc --hcs app.hcs
+Service
+  Logger (class: console)
+    - format: text   [.console]
+    - level: debug   [Logger]
+  Database (id: main-db)
+
+$ hypercode resolve app.hc --hcs app.hcs --ctx env=production
+# …level is now "info   [Logger]"
+```
+
+Or emit the canonical IR (`hypercode.ir/v1`) for a downstream consumer:
+
+```bash
+hypercode emit app.hc --hcs app.hcs --ctx env=production --format json
+```
+
 ## Topics
 
 ### Parsing
