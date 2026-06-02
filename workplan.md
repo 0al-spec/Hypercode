@@ -80,7 +80,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 ## M7 — Diagnostics & LSP (VS Code)
 - [x] HC-100 Structured diagnostics: unified `Diagnostic` (severity, code, source range), LSP-shaped JSON + editor-parseable text, CLI `--diagnostics text|json` — `Sources/Hypercode/Diagnostics/`
 - [x] HC-101 Minimal Swift LSP server (`hypercode lsp`): JSON-RPC over stdio, `initialize`, document sync (didOpen/didChange/didSave/didClose), live `publishDiagnostics` — `Sources/HypercodeCLI/LSPServer.swift` + shared `diagnostics(for:text:)` in the library
-- [ ] HC-102 Thin VS Code extension on `vscode-languageclient` that launches the server
+- [x] HC-102 Thin VS Code extension on `vscode-languageclient` launching `hypercode lsp` — `editors/vscode/` (languages `.hc`/`.hcs`, `hypercode.serverPath` setting); compiled in CI (`.github/workflows/vscode-extension.yml`)
 - [ ] HC-103 Hover / go-to-definition (later, same server)
 
 *(Aim straight for LSP — the standard for VS Code & editor-agnostic. Hyperprompt's custom CLI+JSON-RPC was a documented MVP stopgap; see its ADR-001.)*
