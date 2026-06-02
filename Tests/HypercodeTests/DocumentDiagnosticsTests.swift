@@ -14,7 +14,7 @@ final class DocumentDiagnosticsTests: XCTestCase {
         XCTAssertEqual(result.first?.code, "HC1101")
     }
 
-    func testHypercodeDocumentValidationWarning() {
+    func testHypercodeDocumentDuplicateId() {
         let result = diagnostics(for: .hypercode, text: "A#x\nB#x\n")
         XCTAssertEqual(result.first?.code, "HC3001")
     }

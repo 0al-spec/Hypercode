@@ -25,7 +25,10 @@ final class LSPServer {
         switch method {
         case "initialize":
             respond(id: id, result: [
-                "capabilities": ["textDocumentSync": 1],   // 1 = Full
+                "capabilities": [
+                    // Object form so clients enable open/close/save, not just change.
+                    "textDocumentSync": ["openClose": true, "change": 1, "save": true],
+                ],
                 "serverInfo": ["name": "hypercode", "version": "0.4.0"],
             ])
         case "initialized":

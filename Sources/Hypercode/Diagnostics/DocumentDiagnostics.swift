@@ -5,7 +5,7 @@ public enum DocumentKind: Equatable, Sendable {
 
     /// Infer the kind from a path or URI by extension (defaults to `.hypercode`).
     public init(path: String) {
-        self = path.hasSuffix(".hcs") ? .cascadeSheet : .hypercode
+        self = path.lowercased().hasSuffix(".hcs") ? .cascadeSheet : .hypercode
     }
 }
 
@@ -24,6 +24,8 @@ public func diagnostics(for kind: DocumentKind, text: String, file: String? = ni
     } catch let error as DiagnosticConvertible {
         return [error.diagnostic(file: file)]
     } catch {
-        return []
+        // Surface, don't silently report the document as clean.
+        return [Diagnostic(severity: .error, code: "HC9000",
+                           message: "internal error: \(error)", file: file)]
     }
 }
