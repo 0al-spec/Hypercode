@@ -93,17 +93,20 @@ func runValidate(_ args: [String]) throws {
 
     guard let hcPath else { fail("error: validate needs a .hc file\n\n\(usage)", code: 64) }
 
-    let forest = try Parser(source: readSource(hcPath)).parse()
-    let validator = Validator()
-    var diagnostics = validator.validate(forest)
-    if let hcsPath {
-        let sheet = try CascadeSheetReader().read(readSource(hcsPath))
-        diagnostics += validator.validate(sheet, against: forest)
+    func tagged(_ diagnostics: [Diagnostic], file: String) -> [Diagnostic] {
+        diagnostics.map {
+            Diagnostic(severity: $0.severity, code: $0.code, message: $0.message,
+                       file: $0.file ?? file, range: $0.range)
+        }
     }
 
-    let located = diagnostics.map {
-        Diagnostic(severity: $0.severity, code: $0.code, message: $0.message,
-                   file: $0.file ?? hcPath, range: $0.range)
+    let forest = try Parser(source: readSource(hcPath)).parse()
+    let validator = Validator()
+    // .hc diagnostics point at the .hc file; .hcs diagnostics at the .hcs file.
+    var located = tagged(validator.validate(forest), file: hcPath)
+    if let hcsPath {
+        let sheet = try CascadeSheetReader().read(readSource(hcsPath))
+        located += tagged(validator.validate(sheet, against: forest), file: hcsPath)
     }
     switch diagnosticsFormat {
     case .json:
