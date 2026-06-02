@@ -48,4 +48,18 @@ final class HCSReaderTests: XCTestCase {
     func testInvalidSelectorThrows() {
         XCTAssertThrowsError(try read(["123Bad:", "  x: 1"]))
     }
+
+    func testCommentsAreSkipped() throws {
+        let sheet = try read([
+            "# a comment",
+            "Database:",
+            "  driver: \"x\"",
+            "# --- section ---",
+            ".pooled:",
+            "  size: 10",
+        ])
+        XCTAssertEqual(sheet.rules.count, 2)
+        XCTAssertEqual(sheet.rules[0].selector, .type("Database"))
+        XCTAssertEqual(sheet.rules[1].selector, .klass("pooled"))
+    }
 }

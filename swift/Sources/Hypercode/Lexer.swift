@@ -44,6 +44,10 @@ public struct Lexer {
                     indentStack.removeLast()
                     tokens.append(Token(.dedent, line: lineNo, column: 1))
                 }
+                // A dedent must land on a previously-seen indentation level.
+                if indentWidth != indentStack.last! {
+                    throw LexError(message: "inconsistent indentation", line: lineNo, column: indentWidth + 1)
+                }
             }
 
             // Tokenize the rest of the line.

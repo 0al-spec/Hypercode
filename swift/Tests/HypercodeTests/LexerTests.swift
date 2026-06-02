@@ -42,4 +42,9 @@ final class LexerTests: XCTestCase {
     func testInvalidIdentifierStartThrows() {
         XCTAssertThrowsError(try Lexer("123Button\n").tokenize())
     }
+
+    func testInconsistentDedentThrows() {
+        // `   Weird` (3 spaces) dedents to a column that was never indented.
+        XCTAssertThrowsError(try Lexer("App\n  Child\n    Grand\n   Weird\n").tokenize())
+    }
 }

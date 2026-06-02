@@ -22,7 +22,9 @@ public struct CascadeSheetReader {
                 if text.hasSuffix("\r") { text.removeLast() }
                 return RawLine(number: offset + 1, text: text)
             }
-            .filter { !$0.isBlank }
+            // Skip blanks and YAML-style comment lines (id selectors are quoted,
+            // e.g. '#main-db', so a bare leading '#' is always a comment).
+            .filter { !$0.isBlank && !$0.trimmed.hasPrefix("#") }
 
         var index = 0
         let outline = buildOutline(lines, &index, parentIndent: -1)
