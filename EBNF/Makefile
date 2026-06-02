@@ -26,7 +26,7 @@ all: run
 $(ANTLR_JAR):
 	curl -O $(ANTLR_URL)
 
-build:
+build: $(ANTLR_JAR)
 	java -Xmx500M -cp "$(ANTLR_JAR)" org.antlr.v4.Tool HypercodeLexer.g4 HypercodeParser.g4
 	javac -cp ".:$(ANTLR_JAR)" Hypercode*.java
 	javac -cp ".:$(ANTLR_JAR)" Main.java
