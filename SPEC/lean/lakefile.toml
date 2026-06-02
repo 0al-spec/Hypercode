@@ -1,0 +1,5 @@
+name = "HypercodeOracle"
+defaultTargets = ["HypercodeOracle"]
+
+[[lean_lib]]
+name = "HypercodeOracle"

@@ -69,7 +69,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [ ] HC-042 Ontology path (in the **Ontology** repo): `ontologyc import-hypercode` maps resolved graph → DomainOntologyPackage YAML; `--schema` stays consumer-side
 
 ## M5 — Formal verification 🅿️
-- [ ] HC-050 Lean 4 oracle for the cascade core: executable semantics that generates the fixtures, plus a theorem that the precedence key is a total order ⇒ resolution is deterministic & total. Deferred until the rules stabilize on a working implementation.
+- [x] HC-050 Lean 4 cascade oracle — `SPEC/lean/HypercodeOracle.lean`: executable model, machine-checked agreement with the Swift service example (`native_decide`), kernel-checked order facts, and a `cascade_total` theorem *(generic order-independence proof = future)*
 
 ## M6 — Shared grammar-core (sequenced: Hypercode first, then refactor consumers)
 - [x] HC-060 Canonical `.hc` grammar-core as layered Specifications — `swift/Sources/Hypercode/Specifications/` (Lexical: `IdentifierSpec`; Syntactic: `CommandSpec`, line specs; Decisions: `LineKindDecision`). Indentation stays in the hand-rolled lexer front.
