@@ -1,0 +1,7 @@
+# Sources & build config (out/ is shipped, src/ is not).
+.gitignore
+tsconfig.json
+src/**
+**/*.map
+# node_modules is intentionally NOT ignored: vsce ships production dependencies
+# (vscode-languageclient) into the VSIX and prunes devDependencies itself.

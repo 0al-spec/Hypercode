@@ -1,0 +1,52 @@
+{
+  "name": "hypercode",
+  "displayName": "Hypercode",
+  "description": "Hypercode (.hc / .hcs) language support — live diagnostics via the Hypercode language server.",
+  "version": "0.1.0",
+  "publisher": "0al-spec",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/0al-spec/Hypercode" },
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages", "Linters"],
+  "activationEvents": ["onLanguage:hypercode", "onLanguage:hypercode-hcs"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "hypercode",
+        "aliases": ["Hypercode", "hc"],
+        "extensions": [".hc"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "hypercode-hcs",
+        "aliases": ["Hypercode Cascade Sheet", "hcs"],
+        "extensions": [".hcs"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "Hypercode",
+      "properties": {
+        "hypercode.serverPath": {
+          "type": "string",
+          "default": "hypercode",
+          "description": "Path to the `hypercode` executable (it must support `hypercode lsp`). Defaults to `hypercode` on PATH."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.4.0"
+  }
+}
