@@ -31,3 +31,8 @@ npm run compile
 ## Settings
 
 - `hypercode.serverPath` — path to the `hypercode` executable (default: `hypercode`).
+
+## Release
+
+Packaging (`.vsix`), Marketplace publishing, and CI automation are documented in
+[`DOCS/Release.md`](../../DOCS/Release.md).
