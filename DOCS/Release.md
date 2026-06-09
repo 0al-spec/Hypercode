@@ -2,7 +2,8 @@
 
 How the two shipped artifacts get released: the Swift `hypercode` CLI/library and
 the VS Code extension that drives it. The extension is a thin LSP client — it
-needs the CLI on `PATH` — so the two ship together.
+needs the CLI installed and discoverable (on `PATH`, or via the
+`hypercode.serverPath` setting) — so the two ship together.
 
 ## Artifacts
 
@@ -13,9 +14,10 @@ needs the CLI on `PATH` — so the two ship together.
 
 ## VS Code extension
 
-The extension (`publisher: 0al-spec`, id `hypercode`) is a thin
-`vscode-languageclient` that spawns `hypercode lsp`. Three release tiers, from
-local to public.
+The extension is a thin `vscode-languageclient` that spawns `hypercode lsp`. Its
+`package.json` declares `publisher: 0al-spec` and `name: hypercode`, so the full
+Marketplace identifier is `0al-spec.hypercode`. Three release tiers, from local
+to public.
 
 ### Tier 1 — VSIX (local install / GitHub Release asset)
 
@@ -63,10 +65,18 @@ A workflow triggered on a `vscode/v*` tag:
 1. `npm ci && vsce package` → upload the `.vsix` as a GitHub Release asset.
 2. `vsce publish` using a `VSCE_PAT` repository secret.
 
-Release then reduces to:
+> ⚠️ **The version lives in `package.json`, not the tag.** `vsce package` /
+> `vsce publish` read `editors/vscode/package.json` `version` — the `vscode/v*`
+> tag name is *not* consulted. So the tag alone is not enough: a new release must
+> first bump and commit `package.json` (e.g. `vsce publish minor`, which bumps,
+> commits and tags in one step), or the workflow must derive the version from the
+> tag and write it into `package.json` before packaging. Otherwise a `vscode/v0.2.0`
+> tag would still publish `0.1.0`, and Marketplace would reject it as a duplicate.
+
+Release then reduces to (version already bumped & committed):
 
 ```bash
-git tag vscode/v0.1.0 && git push --tags
+git tag vscode/v0.2.0 && git push --tags
 ```
 
 **Prerequisites for Tier 2/3** (one-time, manual):

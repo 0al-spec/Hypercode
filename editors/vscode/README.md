@@ -35,4 +35,6 @@ npm run compile
 ## Release
 
 Packaging (`.vsix`), Marketplace publishing, and CI automation are documented in
-[`DOCS/Release.md`](../../DOCS/Release.md).
+[`DOCS/Release.md`](https://github.com/0al-spec/Hypercode/blob/main/DOCS/Release.md)
+(the relative path is `../../DOCS/Release.md` in the repo; an absolute URL is used
+here so the link also resolves in the packaged Marketplace README).
