@@ -29,3 +29,8 @@ Consumers (Ontology, Hyperprompt, …) depend on Hypercode, never the reverse. T
 integration contract is the resolved-graph IR (`Schema/`), not the Swift
 API: a consumer reads the emitted IR (or links the library) and projects it to
 its own target. See [Backends.md](Backends.md) and [Dialects.md](Dialects.md).
+
+## Releasing
+
+How the CLI/library and the VS Code extension get shipped (VSIX, Marketplace,
+CI automation) is documented in [Release.md](Release.md).
