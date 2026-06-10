@@ -2,9 +2,9 @@
 
 **Status:** Draft
 
-**Version:** 0.1
+**Version:** 0.2
 
-**Date:** July 8, 2025
+**Date:** June 10, 2026
 
 **Author:** Egor Merkushev
 
@@ -236,11 +236,67 @@ Hypercode and HCS are declarative and do not define runtime execution isolation 
 
 The specification assumes that the resolution and execution engine is trusted. No mechanisms are currently defined for verifying integrity of `.hcs` rules or controlling their provenance. Future versions may include digital signing or validation capabilities.
 
-## 9. Comparison to Existing Concepts
+## 9. Novelty and Prior Art
 
-*  **Dependency Injection (DI):** Hypercode can be seen as a form of declarative, externalized DI. Unlike traditional DI containers configured via XML or annotations, HCS provides a more expressive and dynamic configuration mechanism through selectors and @rules.
-*  **Templating Engines (e.g., Jinja, Handlebars):** While similar, templating engines typically generate static text or configuration files. Hypercode is concerned with generating and configuring a live, executable program graph.
-*  **Infrastructure as Code (IaC, e.g., Ansible, Terraform):** Hypercode shares the declarative philosophy of IaC tools but applies it to the application logic itself, rather than to the underlying infrastructure. It defines the application's runtime behavior, not just its deployment environment using HCS.
+### 9.1. The Claim
+
+No single ingredient of Hypercode is new. Selectors, cascading configuration, dependency graphs, code generation, and specification-driven development each have mature prior art. The claim is narrower, and deliberately falsifiable:
+
+> We have not found a mainstream specification or tooling stack that combines, in one format: (1) a stable, addressable application topology; (2) CSS-like selector rules over that topology; (3) deterministic cascade resolution with specificity and context rules; (4) first-class provenance for every resolved property; and (5) a versioned resolved IR designed for explanation, semantic diffing, validation, and incremental — including AI-assisted — code generation.
+
+Hypercode is therefore a new *combination* and a new *layer* — a context-resolved specification layer between human-reviewed architectural intent and deterministic or AI-assisted code generation — not a wholly new idea.
+
+### 9.2. What Hypercode Is Not
+
+* **Not a replacement for typed configuration languages.** CUE, Dhall, Nickel, Pkl, KCL, and Jsonnet are mature at validating and generating configuration *data*, with strong type systems, contracts, and tooling. Hypercode does not compete on those axes today (see §9.8); its subject is an addressable *topology* and the rules that target it, not standalone data.
+* **Not model-driven architecture.** The "executable architecture" lineage (MDA, executable BPMN, TOSCA) expects the model to be complete enough that systems can be derived from it mechanically; in practice the models grew as complex as the code, and round-trip synchronization failed. A `.hc` file is deliberately *incomplete*: a skeleton plus context policies, with algorithmic detail left to host code or to a generator.
+* **Not a natural-language specification format.** AGENTS.md, Kiro specs, and GitHub Spec Kit guide coding agents with Markdown. Hypercode is positioned *underneath* such documents: the part of a specification that must resolve deterministically, diff semantically, and carry provenance.
+* **Not an interface contract or agent protocol.** OpenAPI, AsyncAPI, and GraphQL describe service boundaries; MCP and A2A standardize agent interoperability. Hypercode nodes may *reference* such contracts as properties. Generating or replacing them is an explicit non-goal: pulling interface schemas into `.hcs` would recreate the completeness pressure that bloated MDA models.
+
+### 9.3. Prior Art Map
+
+| Segment | Representative tools | What they solve | Relation to Hypercode |
+|---|---|---|---|
+| Typed configuration languages | CUE, Dhall, Nickel, Pkl, KCL, Jsonnet | validation, schemas, DRY configuration generation | Hypercode adds an addressable topology with cascade and provenance semantics; it does not yet match their type systems |
+| Deployment overlays | Helm, Kustomize, kpt | packaging and per-environment overlays for Kubernetes manifests | the same pain (multi-environment duplication), but overlays target manifests, and "why is this value here?" is answered by archaeology; Hypercode makes provenance part of resolution semantics |
+| Application models | OAM / KubeVela | separating developer components from operator traits and policies over an application topology | the closest structural analog — a two-artifact split over an application topology; OAM is Kubernetes-specific and has no specificity cascade, no property-level provenance, and no codegen-oriented IR |
+| DI / wiring | Spring, Guice, Dagger | object-graph wiring, including compile-time code generation | declarative composition roots and AOT wiring are not new; Hypercode adds context resolution, provenance, and stable language-agnostic anchors |
+| Architecture as code | Structurizr / C4, TOSCA, BPMN | modeling, documentation, orchestration | these model or document systems; Hypercode aims at a codegen-ready resolved IR with provenance |
+| Interface contracts | OpenAPI, AsyncAPI, GraphQL | service-boundary contracts | adjacent layers: Hypercode nodes reference these contracts; generating them is a non-goal (§9.2) |
+| Agent protocols & instructions | MCP, A2A, AGENTS.md | agent interoperability; coding-agent guidance | orthogonal; Hypercode can be the formal artifact such agents consume |
+| AI spec-driven development | GitHub Spec Kit, Kiro | natural-language specifications as the source of truth for code generation | shared thesis ("code as regenerated output"); Hypercode contributes the formally resolvable, diffable, provenance-carrying layer that Markdown cannot provide |
+| Software product lines (academic) | feature models (FODA), delta-oriented programming, CVL | one structure, many variants | white-label contexts are a product-line scenario; to our knowledge, cascade-with-specificity over context dimensions has not been explored as a variability mechanism in that literature |
+
+### 9.4. Why Cascade — the Override Objection
+
+The strongest objection to Hypercode's design comes from the configuration-language community itself. Drawing on Google's experience with GCL — where inheritance and overrides became a chronic source of configuration bugs — the designers of CUE made unification order-independent and *forbade* overrides entirely: in CUE, the origin of a value is never in doubt precisely because no rule can silently replace another. Hypercode deliberately reintroduces overriding, so the choice requires a defense. It has four parts:
+
+1. **Determinism is machine-checked, not promised.** Cascade resolution (specificity, then source order) is specified operationally ([resolution semantics](../EBNF/Hypercode_Resolution.md)) and cross-checked by an executable [Lean 4 oracle](../SPEC/lean/). Resolution never depends on evaluation order.
+2. **Provenance is core semantics, not optional tooling.** Every resolved property records its winning selector and source location as part of the [IR contract](../Schema/hypercode-ir-v1.schema.json), not as an add-on. The CSS cascade became manageable the day developer tools showed where each style came from; Hypercode bakes that affordance into the format. A planned `hypercode explain` command will surface the full match trace, including losing rules.
+3. **Values cascade; contracts only narrow.** The planned contract layer (property schemas attached via selectors) is monotonic in CUE's spirit: a more specific rule may override a *value*, but may only tighten — never weaken — a *contract* established by a less specific rule. Behavior cascades; safety does not. This asymmetry is the design's direct answer to the GCL lesson.
+4. **Known failure modes are acknowledged.** Specificity wars and selector escalation are real CSS pathologies at scale. Countermeasures — origin/layer control analogous to CSS `@layer`, dangling-selector validation (already in `hypercode validate`), and explain tooling — are sequenced in the [work plan](../workplan.md) ahead of language surface that would amplify them.
+
+### 9.5. Why a Stable Topology
+
+Selector rules need something stable to address. `.hc` exists to provide exactly that: a small, versioned, addressable graph whose nodes (`type`, `.class`, `#id`) act as anchors. Those anchors serve every downstream consumer at once: `.hcs` rules target them, generated code can be tagged with the node it implements, validators map findings back to them, and diffs of the resolved graph identify affected modules. Without a stable topology, provenance, semantic diffing, and incremental regeneration lose their reference frame — which is why the structure is a separate artifact rather than keys scattered through configuration data.
+
+### 9.6. Why Provenance
+
+In layered configuration systems the recurring operational question is "where did this value come from?", and it is answered by archaeology across charts, overlays, and profiles. Hypercode's resolver answers it as part of its output: every resolved property carries the selector and source line that won the cascade. Provenance turns the specification from text into an audit and debugging artifact. For AI-assisted generation it does further work: a validator that finds nonconforming generated code can state which rule demanded the behavior, and generated tests can carry their provenance as comments — making the cascade an auditable trail rather than an opaque merge.
+
+### 9.7. Why AI Code Generation
+
+Spec-driven development is converging on the view that the specification is the durable artifact and code is increasingly a regenerated output. Today that movement runs almost entirely on natural-language Markdown, which neither resolves deterministically nor diffs semantically. Hypercode's intended role is the formal substrate underneath it, with three consequences:
+
+* **Confined nondeterminism.** The specification side resolves deterministically (machine-checked, §9.4); nondeterminism is confined to the generation step, where it can be validated against the resolved graph.
+* **A fixed generated/durable boundary.** Classic MDA demanded complete models; an LLM generator tolerates incompleteness, so `.hc` can stay a skeleton. The node boundary fixes the division of labor: orchestration and wiring are derived from the resolved graph (mechanically where possible), while durable leaf implementations live behind generated interfaces and are never overwritten. Node-level hashes over the resolved IR provide the invalidation signal for incremental regeneration.
+* **Review compression.** The unit of human review shifts from generated code to the specification diff: humans approve a small, formally resolved change; machines expand it into code and validate the expansion against the same graph.
+
+### 9.8. Acknowledged Limits
+
+* **Context is resolve-time.** `--ctx` is supplied when resolving; dynamic per-request context (e.g., a single deployment serving many tenants) would require embedding the resolver as a runtime library and is currently out of scope.
+* **No integrity chain yet.** As noted in §8, nothing verifies the provenance chain end-to-end (specification hash → IR hash → generated-code attestation). For the review-compression story to carry governance weight, such attestations are eventually required; they are deliberately deferred.
+* **Type-system maturity.** Resolved values are untyped strings in IR v1, and the contract layer (§9.4) is planned, not implemented. Until both land (an IR v2 concern), Hypercode does not compete with typed configuration languages on safety.
 
 ## 10. Open Questions
 
@@ -256,7 +312,23 @@ The specification assumes that the resolution and execution engine is trusted. N
 * [Spring Framework: Dependency Injection](https://docs.spring.io/spring-framework/reference/core/beans/)
 * [Terraform Configuration Language](https://developer.hashicorp.com/terraform/language)
 
+Prior art surveyed in §9:
+
+* [CUE](https://cuelang.org/) · [Pkl](https://pkl-lang.org/) · [Dhall](https://dhall-lang.org/) · [Nickel](https://nickel-lang.org/) · [KCL](https://www.kcl-lang.io/) · [Jsonnet](https://jsonnet.org/) — typed configuration languages
+* [Helm](https://helm.sh/) · [Kustomize](https://kustomize.io/) — deployment overlays
+* [Open Application Model](https://oam.dev/) · [KubeVela](https://kubevela.io/) — application models
+* [Structurizr DSL](https://docs.structurizr.com/dsl) · [OASIS TOSCA](https://www.oasis-open.org/committees/tosca/) · [OMG BPMN](https://www.omg.org/spec/BPMN/) — architecture as code
+* [OpenAPI](https://www.openapis.org/) · [AsyncAPI](https://www.asyncapi.com/) — interface contracts
+* [Model Context Protocol](https://modelcontextprotocol.io/) · [A2A](https://a2a-protocol.org/) · [AGENTS.md](https://agents.md/) — agent protocols & instructions
+* [GitHub Spec Kit](https://github.com/github/spec-kit) · [Kiro](https://kiro.dev/) · [Martin Fowler — Exploring Gen AI / spec-driven development](https://martinfowler.com/articles/exploring-gen-ai.html) — AI spec-driven development
+* Kang et al., *Feature-Oriented Domain Analysis (FODA)*, CMU/SEI-90-TR-021, 1990 · Pohl, Böckle & van der Linden, *Software Product Line Engineering*, Springer, 2005 — software product lines
+
 ## 12. Change Log
+
+**Version 0.2** (2026-06-10):
+
+* Replaced §9 "Comparison to Existing Concepts" with "Novelty and Prior Art": the novelty claim stated as a falsifiable combination; non-goals; a prior-art map (typed configuration languages, deployment overlays, OAM/KubeVela, DI, architecture-as-code, interface contracts, agent protocols, AI spec-driven development, software product lines); the override objection and its answer, including the *values cascade, contracts only narrow* rule; rationale for stable topology, provenance, and AI code generation; acknowledged limits.
+* Extended §11 References with the surveyed prior art.
 
 **Version 0.1** (2025-07-12):
 
