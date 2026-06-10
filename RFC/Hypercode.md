@@ -2,7 +2,7 @@
 
 **Status:** Draft
 
-**Version:** 0.2
+**Version:** 0.1.1
 
 **Date:** June 10, 2026
 
@@ -333,7 +333,7 @@ Prior art surveyed in §9:
 
 ## 12. Change Log
 
-**Version 0.2** (2026-06-10):
+**Version 0.1.1** (2026-06-10):
 
 * Replaced §9 "Comparison to Existing Concepts" with "Novelty and Prior Art": the novelty claim stated as a falsifiable combination; non-goals; a prior-art map (typed configuration languages, deployment overlays, OAM/KubeVela, DI, architecture-as-code, interface contracts, agent protocols, AI spec-driven development, software product lines); the override objection and its answer, including the *values cascade, contracts only narrow* rule; rationale for stable topology, provenance, and AI code generation; acknowledged limits.
 * Extended §11 References with the surveyed prior art.

@@ -88,7 +88,7 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 
 *(Aim straight for LSP — the standard for VS Code & editor-agnostic. Hyperprompt's custom CLI+JSON-RPC was a documented MVP stopgap; see its ADR-001.)*
 
-## M8 — Spec-layer hardening (RFC v0.2 §9 follow-through)
+## M8 — Spec-layer hardening (RFC §9 follow-through)
 
 P0 — what makes the novelty claim defensible:
 - ⬜ HC-110 `hypercode explain <node>.<property> [--ctx …]` — full cascade trace: winner *and* losing rules with specificity/source-order, contract checks; requires the resolver to retain the matched-rule list (today only the winner survives into the IR)
