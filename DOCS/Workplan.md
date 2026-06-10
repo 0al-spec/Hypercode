@@ -175,7 +175,7 @@ Golden-file tests against `Examples/service.{hc,hcs}` for:
 
 ---
 
-## PR-4 — HC-111 Monotonic contracts (`feat/hc-111-contracts`)
+## PR-4 — HC-111 Monotonic contracts (`feat/hc-111-contracts`) ✅ merged 2026-06-11
 
 Depends on PR-1, PR-2, and PR-3.
 

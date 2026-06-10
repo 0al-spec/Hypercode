@@ -70,11 +70,54 @@ public struct Match: Equatable, Sendable {
     public let order: Int
 }
 
-/// A parsed `.hcs` cascade sheet: an ordered list of rules.
+// MARK: - Contract types
+
+/// The scalar type a property is constrained to in a `@contract:` block.
+public enum ContractType: String, Equatable, Sendable {
+    case string, int, float, bool
+}
+
+/// A constraint for one property key declared inside a `@contract:` selector block.
+public struct PropertyContract: Equatable, Sendable {
+    public let type: ContractType
+    /// `true` = property must be present; `false` = property may be absent (`key[?]:` syntax).
+    public let required: Bool
+    /// Lower bound (inclusive). `nil` = no lower bound.
+    public let min: Double?
+    /// Upper bound (inclusive). `nil` = no upper bound.
+    public let max: Double?
+
+    public init(type: ContractType, required: Bool = true, min: Double? = nil, max: Double? = nil) {
+        self.type = type
+        self.required = required
+        self.min = min
+        self.max = max
+    }
+}
+
+/// A `@contract:` block entry: a selector and the property constraints it declares.
+public struct SelectorContract: Equatable, Sendable {
+    public let selector: Selector
+    public let properties: [String: PropertyContract]
+    public let file: String?
+    public let line: Int
+
+    public init(selector: Selector, properties: [String: PropertyContract],
+                file: String? = nil, line: Int) {
+        self.selector = selector
+        self.properties = properties
+        self.file = file
+        self.line = line
+    }
+}
+
+/// A parsed `.hcs` cascade sheet: an ordered list of rules and `@contract:` blocks.
 public struct CascadeSheet: Equatable, Sendable {
     public let rules: [Rule]
+    public let contracts: [SelectorContract]
 
-    public init(rules: [Rule]) {
+    public init(rules: [Rule], contracts: [SelectorContract] = []) {
         self.rules = rules
+        self.contracts = contracts
     }
 }

@@ -32,11 +32,12 @@ public struct CascadeSheetReader {
         let outline = buildOutline(lines, &index, parentIndent: -1)
 
         var rules: [Rule] = []
+        var contracts: [SelectorContract] = []
         var order = 0
         for node in outline {
-            try interpretTopLevel(node, file: file, into: &rules, order: &order)
+            try interpretTopLevel(node, file: file, into: &rules, contracts: &contracts, order: &order)
         }
-        return CascadeSheet(rules: rules)
+        return CascadeSheet(rules: rules, contracts: contracts)
     }
 
     // MARK: - Outline (group lines into a tree by indentation)
@@ -61,9 +62,19 @@ public struct CascadeSheetReader {
 
     // MARK: - Interpretation
 
-    private func interpretTopLevel(_ node: Outline, file: String?, into rules: inout [Rule], order: inout Int) throws {
+    private func interpretTopLevel(
+        _ node: Outline,
+        file: String?,
+        into rules: inout [Rule],
+        contracts: inout [SelectorContract],
+        order: inout Int
+    ) throws {
         let content = String(node.line.trimmed)
-        if content.hasPrefix("@") {
+        if content == "@contract:" {
+            for child in node.children {
+                try interpretContractSelector(child, file: file, into: &contracts)
+            }
+        } else if content.hasPrefix("@") {
             guard let split = splitFirstColon(content), split.right.isEmpty else {
                 throw HCSError(message: "expected '@dimension[value]:'", line: node.line.number)
             }
@@ -74,6 +85,78 @@ public struct CascadeSheetReader {
         } else {
             try interpretRule(node, condition: nil, file: file, into: &rules, order: &order)
         }
+    }
+
+    private func interpretContractSelector(_ node: Outline, file: String?, into contracts: inout [SelectorContract]) throws {
+        let content = String(node.line.trimmed)
+        guard let split = splitFirstColon(content), split.right.isEmpty else {
+            throw HCSError(message: "expected a selector header ending with ':' in @contract block", line: node.line.number)
+        }
+        let selector = try parseSelector(String(split.left), line: node.line.number)
+        var properties: [String: PropertyContract] = [:]
+        for child in node.children {
+            let (key, contract) = try parseConstraintLine(child)
+            properties[key] = contract
+        }
+        contracts.append(SelectorContract(selector: selector, properties: properties, file: file, line: node.line.number))
+    }
+
+    private func parseConstraintLine(_ node: Outline) throws -> (String, PropertyContract) {
+        guard node.children.isEmpty else {
+            throw HCSError(message: "unexpected nested block in @contract constraint", line: node.line.number)
+        }
+        let content = String(node.line.trimmed)
+        guard let colonIdx = content.firstIndex(of: ":") else {
+            throw HCSError(message: "expected 'key[?]: type [>= n] [<= n]'", line: node.line.number)
+        }
+        var rawKey = String(trim(content[..<colonIdx]))
+        let required: Bool
+        if rawKey.hasSuffix("[?]") {
+            required = false
+            rawKey = String(rawKey.dropLast(3))
+        } else {
+            required = true
+        }
+        guard IdentifierSpec().isSatisfiedBy(rawKey) else {
+            throw HCSError(message: "invalid constraint key '\(rawKey)'", line: node.line.number)
+        }
+        let rest = String(trim(content[content.index(after: colonIdx)...]))
+        let (contractType, min, max) = try parseConstraintRHS(rest, line: node.line.number)
+        return (rawKey, PropertyContract(type: contractType, required: required, min: min, max: max))
+    }
+
+    private func parseConstraintRHS(_ text: String, line: Int) throws -> (ContractType, Double?, Double?) {
+        var tokens = text.split(separator: " ").map(String.init)
+        guard !tokens.isEmpty else {
+            throw HCSError(message: "expected type name in constraint", line: line)
+        }
+        let typeName = tokens.removeFirst()
+        guard let contractType = ContractType(rawValue: typeName.lowercased()) else {
+            throw HCSError(message: "unknown constraint type '\(typeName)'; expected string|int|float|bool", line: line)
+        }
+        var min: Double?
+        var max: Double?
+        var i = 0
+        while i < tokens.count {
+            switch tokens[i] {
+            case ">=":
+                i += 1
+                guard i < tokens.count, let n = Double(tokens[i]) else {
+                    throw HCSError(message: "expected number after '>='", line: line)
+                }
+                min = n
+            case "<=":
+                i += 1
+                guard i < tokens.count, let n = Double(tokens[i]) else {
+                    throw HCSError(message: "expected number after '<='", line: line)
+                }
+                max = n
+            default:
+                throw HCSError(message: "unexpected token '\(tokens[i])' in constraint", line: line)
+            }
+            i += 1
+        }
+        return (contractType, min, max)
     }
 
     private func interpretRule(

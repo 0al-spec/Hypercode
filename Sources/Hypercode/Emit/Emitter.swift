@@ -21,12 +21,16 @@ public struct Emitter {
         _ forest: [ResolvedNode],
         version: EmitVersion = .v2,
         context: ResolutionContext = [:],
+        commands: [Command] = [],
+        contracts: [SelectorContract] = [],
         as format: EmitFormat
     ) -> String {
         let root: IR
         switch version {
         case .v1: root = Emitter.intermediateV1(forest)
-        case .v2: root = Emitter.intermediateV2(forest, context: context)
+        case .v2: root = Emitter.intermediateV2(
+            forest, context: context, commands: commands, contracts: contracts
+        )
         }
         switch format {
         case .json: return Emitter.json(root, indent: 0) + "\n"
@@ -83,9 +87,15 @@ public struct Emitter {
 
     // MARK: v2
 
-    static func intermediateV2(_ forest: [ResolvedNode], context: ResolutionContext) -> IR {
+    static func intermediateV2(
+        _ forest: [ResolvedNode],
+        context: ResolutionContext,
+        commands: [Command] = [],
+        contracts: [SelectorContract] = []
+    ) -> IR {
         let hashes = forest.map { nodeHash($0) }
-        let nodeIRs = forest.map { nodeV2($0) }
+        let nodeIRs = zip(forest, commands.isEmpty ? Array(repeating: nil, count: forest.count) as [Command?] : commands.map(Optional.init))
+            .map { node, cmd in nodeV2(node, command: cmd, ancestors: [], contracts: contracts) }
         let docHash = documentHash(hashes)
         return .object([
             ("version", .string("hypercode.ir/v2")),
@@ -104,24 +114,56 @@ public struct Emitter {
         ])
     }
 
-    private static func nodeV2(_ node: ResolvedNode) -> IR {
+    private static func nodeV2(
+        _ node: ResolvedNode,
+        command: Command?,
+        ancestors: [Command],
+        contracts: [SelectorContract]
+    ) -> IR {
         var fields: [(String, IR)] = [("type", .string(node.type))]
         if let className = node.className { fields.append(("class", .string(className))) }
         if let id = node.id { fields.append(("id", .string(id))) }
 
         let properties = node.properties.keys.sorted().map { key -> (String, IR) in
             let rv = node.properties[key]!
+            let applicableContracts = command.map { cmd -> [IR] in
+                let ctx = NodeContext(node: cmd, ancestors: ancestors)
+                return contracts
+                    .filter { sc in selectorSpec(sc.selector).isSatisfiedBy(ctx) }
+                    .compactMap { sc -> IR? in
+                        guard let pc = sc.properties[key] else { return nil }
+                        return contractIR(pc, selector: sc.selector)
+                    }
+            } ?? []
             let propFields: [(String, IR)] = [
                 ("value", typedValueIR(rv.value)),
                 ("winner", matchIR(rv.winner)),
                 ("losers", .array(rv.losers.map(matchIR))),
-                ("contracts", .array([])),
+                ("contracts", .array(applicableContracts)),
             ]
             return (key, .object(propFields))
         }
         fields.append(("properties", .object(properties)))
-        fields.append(("children", .array(node.children.map(self.nodeV2))))
+
+        let childCommands = command.map { $0.children } ?? []
+        let childAncs = command.map { ancestors + [$0] } ?? ancestors
+        fields.append(("children", .array(zip(node.children, childCommands.isEmpty
+            ? Array(repeating: nil, count: node.children.count) as [Command?]
+            : childCommands.map(Optional.init)).map { child, childCmd in
+            nodeV2(child, command: childCmd, ancestors: childAncs, contracts: contracts)
+        })))
         return .object(fields)
+    }
+
+    private static func contractIR(_ pc: PropertyContract, selector: Selector) -> IR {
+        var pairs: [(String, IR)] = [
+            ("selector", .string(selector.description)),
+            ("type", .string(pc.type.rawValue)),
+            ("required", .bool(pc.required)),
+        ]
+        if let min = pc.min { pairs.append(("min", .double(min))) }
+        if let max = pc.max { pairs.append(("max", .double(max))) }
+        return .object(pairs)
     }
 
     private static func typedValueIR(_ v: TypedValue) -> IR {

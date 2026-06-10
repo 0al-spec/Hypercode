@@ -35,13 +35,15 @@ public struct Validator {
     }
 
     /// `.hcs` checks: flag rules whose selector matches no node in the forest
-    /// (likely a typo or a dead rule).
+    /// (likely a typo or a dead rule), plus contract monotonicity violations.
     public func validate(_ sheet: CascadeSheet, against forest: [Command]) -> [Diagnostic] {
-        sheet.rules.compactMap { rule in
+        let dangling = sheet.rules.compactMap { rule in
             anyNode(forest, ancestors: [], matches: selectorSpec(rule.selector))
                 ? nil
                 : Diagnostic(severity: .warning, code: "HC3002", message: "selector '\(rule.selector)' matches no node", range: SourceRange(SourcePosition(line: rule.line, column: 1)))
         }
+        let contractDiags = ContractValidator().validate(sheet.contracts)
+        return dangling + contractDiags
     }
 
     private func anyNode(

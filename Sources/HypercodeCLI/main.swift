@@ -165,10 +165,11 @@ func runEmit(_ args: [String]) throws {
 
     guard let hcPath else { fail("error: emit needs a .hc file\n\n\(usage)", code: 64) }
 
-    let forest = try Parser(source: readSource(hcPath)).parse()
+    let commands = try Parser(source: readSource(hcPath)).parse()
     let sheet = try hcsPath.map { p in try CascadeSheetReader().read(readSource(p), file: p) } ?? CascadeSheet(rules: [])
-    let resolved = Resolver(sheet: sheet, context: context).resolve(forest)
-    print(Emitter().emit(resolved, version: irVersion, context: context, as: format), terminator: "")
+    let resolved = Resolver(sheet: sheet, context: context).resolve(commands)
+    print(Emitter().emit(resolved, version: irVersion, context: context,
+                         commands: commands, contracts: sheet.contracts, as: format), terminator: "")
 }
 
 func runExplain(_ args: [String]) throws {

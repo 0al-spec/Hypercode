@@ -2,7 +2,7 @@
 
 **Status:** Draft
 
-**Version:** 0.1
+**Version:** 0.2
 
 **Date:** July 12, 2025
 
@@ -108,20 +108,92 @@ Root
 - Indentation is significant (off-side rule): a nested `<block>` must be indented deeper than its parent `<command-line>`. The lexer reads each line's leading `<indent>`, tracks it on an indentation stack, and emits the synthetic `<INDENT>` / `<DEDENT>` tokens when the depth increases or decreases. Because this context-sensitive relationship cannot be expressed in pure BNF, indentation handling is delegated to the lexer (see `HypercodeLexer.g4`).
 - No support for inline attributes or arguments in `.hc` files (these belong in `.hcs`).
 
-## 6. Future Work
+## 6. `.hcs` Cascade Sheet Syntax
+
+A `.hcs` file contains cascade rules and optional contract blocks.
+
+### 6.1 Cascade Rule
+
+```
+<sheet>           ::= { <top-level-block> }
+<top-level-block> ::= <dimension-block> | <contract-block> | <rule-block>
+
+<dimension-block> ::= "@" <identifier> "[" <value> "]" ":" <newline>
+                       <INDENT> { <rule-block> } <DEDENT>
+<value>           ::= <identifier>
+
+<rule-block>      ::= <selector> ":" <newline>
+                       <INDENT> { <property-line> } <DEDENT>
+<property-line>   ::= <identifier> ":" <scalar> <newline>
+<scalar>          ::= <quoted-string> | <number> | "true" | "false"
+<quoted-string>   ::= '"' { <char> } '"' | "'" { <char> } "'"
+```
+
+### 6.2 Selectors
+
+```
+<selector>        ::= <simple-selector> { ">" <simple-selector> }
+<simple-selector> ::= <type-sel> | <class-sel> | <id-sel>
+<type-sel>        ::= <identifier>
+<class-sel>       ::= "." <identifier>
+<id-sel>          ::= "#" <identifier>
+```
+
+Specificity (highest to lowest): id `#x` > class `.x` > type `x`.
+
+### 6.3 `@contract:` Block (HC-111)
+
+A `@contract:` block declares property constraints for nodes matching a selector.
+More-specific selectors may only **narrow** constraints — never widen them (monotonicity invariant).
+
+```
+<contract-block>  ::= "@contract:" <newline>
+                       <INDENT> { <contract-selector> } <DEDENT>
+
+<contract-selector> ::= <selector> ":" <newline>
+                         <INDENT> { <constraint-line> } <DEDENT>
+
+<constraint-line> ::= <constraint-key> ":" <constraint-type>
+                       [ ">=" <number> ] [ "<=" <number> ] <newline>
+
+<constraint-key>  ::= <identifier> [ "[?]" ]   // "[?]" marks optional property
+<constraint-type> ::= "string" | "int" | "float" | "bool"
+```
+
+#### Constraint syntax example
+
+```hcs
+@contract:
+  service:
+    timeout[?]: int >= 1 <= 300
+    name: string
+  .primary:
+    timeout: int >= 10 <= 200   # narrows — allowed
+```
+
+#### Monotonicity rules (enforced by `ContractValidator`)
+
+| Violation | Code | Description |
+|-----------|------|-------------|
+| Type changed | HC2101 | More-specific selector uses a different type |
+| Interval widened | HC2102 | More-specific selector lowers min or raises max |
+| Required → optional | HC2103 | More-specific selector marks a required property as `[?]` |
+
+## 7. Future Work
 
 - Define EBNF with optional comments, arguments, and macro support.
 - Add parser conformance test suite.
 - Define formal AST schema (YAML or JSON).
 
-## 7. Change Log
+## 8. Change Log
+
+**Version 0.2** (2026-06-11)
+
+* Added Section 6: `.hcs` cascade sheet syntax (rules, selectors, dimension blocks).
+* Added `@contract:` block grammar (HC-111): constraint-line syntax, `[?]` optional marker, bounds `>=`/`<=`.
+* Documented monotonicity rules HC2101/HC2102/HC2103.
 
 **Version 0.1** (2025-07-12)
 
 * Initial public draft of the Hypercode grammar in BNF.
 * Describes core structural elements: command, class, ID, indentation-based hierarchy.
-* Includes:
-  - BNF grammar for `.hc` files
-  - Visual AST example
-  - Positive and negative test cases
-  - Notes on scope and grammar limitations
