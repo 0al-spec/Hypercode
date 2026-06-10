@@ -214,7 +214,7 @@ APIServer > Listen:
  *  Runs the same app, but it now uses a PostgreSQL database and logs in JSON format. The core logic in `app.hc` remains untouched:
 
  ```bash
- hypercode-runner app.hc --hcs config.hcs --env production
+ hypercode-runner app.hc --hcs config.hcs --ctx env=production
  ```
 
  ## 6. Compatibility and Interoperability
@@ -272,8 +272,8 @@ Hypercode is therefore a new *combination* and a new *layer* — a context-resol
 
 The strongest objection to Hypercode's design comes from the configuration-language community itself. Drawing on Google's experience with GCL — where inheritance and overrides became a chronic source of configuration bugs — the designers of CUE made unification order-independent and *forbade* overrides entirely: in CUE, the origin of a value is never in doubt precisely because no rule can silently replace another. Hypercode deliberately reintroduces overriding, so the choice requires a defense. It has four parts:
 
-1. **Determinism is machine-checked, not promised.** Cascade resolution (specificity, then source order) is specified operationally ([resolution semantics](../EBNF/Hypercode_Resolution.md)) and cross-checked by an executable [Lean 4 oracle](../SPEC/lean/). Resolution never depends on evaluation order.
-2. **Provenance is core semantics, not optional tooling.** Every resolved property records its winning selector and source location as part of the [IR contract](../Schema/hypercode-ir-v1.schema.json), not as an add-on. The CSS cascade became manageable the day developer tools showed where each style came from; Hypercode bakes that affordance into the format. A planned `hypercode explain` command will surface the full match trace, including losing rules.
+1. **Determinism is machine-checked, not promised.** Cascade resolution (specificity, then source order) is specified operationally ([resolution semantics](../EBNF/Hypercode_Resolution.md)) and cross-checked by an executable [Lean 4 oracle](../SPEC/lean/). Resolution is independent of rule application and traversal order: the outcome is fully determined by the pair (specificity, source order).
+2. **Provenance is core semantics, not optional tooling.** Every resolved property records its winning selector and source line as part of the [IR contract](../Schema/hypercode-ir-v1.schema.json), not as an add-on. The CSS cascade became manageable the day developer tools showed where each style came from; Hypercode bakes that affordance into the format. A planned `hypercode explain` command will surface the full match trace, including losing rules.
 3. **Values cascade; contracts only narrow.** The planned contract layer (property schemas attached via selectors) is monotonic in CUE's spirit. Although that layer is not yet implemented, its governing rule is fixed normatively now:
 
    > A more specific selector **MAY** override a value.
@@ -295,7 +295,7 @@ In layered configuration systems the recurring operational question is "where di
 Spec-driven development is converging on the view that the specification is the durable artifact and code is increasingly a regenerated output. Today that movement runs almost entirely on natural-language Markdown, which neither resolves deterministically nor diffs semantically. Hypercode's intended role is the formal substrate underneath it, with three consequences:
 
 * **Confined nondeterminism.** The specification side resolves deterministically (machine-checked, §9.4); nondeterminism is confined to the generation step, where it can be validated against the resolved graph.
-* **A fixed generated/durable boundary.** Classic MDA demanded complete models; an LLM generator tolerates incompleteness, so `.hc` can stay a skeleton. The node boundary fixes the division of labor: orchestration and wiring are derived from the resolved graph (mechanically where possible), while durable leaf implementations live behind generated interfaces and are never overwritten. Node-level hashes over the resolved IR provide the invalidation signal for incremental regeneration.
+* **A fixed generated/durable boundary.** Classic MDA demanded complete models; an LLM generator tolerates incompleteness, so `.hc` can stay a skeleton. The node boundary fixes the division of labor: orchestration and wiring are derived from the resolved graph (mechanically where possible), while durable leaf implementations live behind generated interfaces and are never overwritten. Node-level hashes over the resolved IR — a planned `hypercode.ir/v2` addition (see the [work plan](../workplan.md)), not part of IR v1 — will provide the invalidation signal for incremental regeneration.
 * **Review compression.** The unit of human review shifts from generated code to the specification diff: humans approve a small, formally resolved change; machines expand it into code and validate the expansion against the same graph.
 
 ### 9.8. Acknowledged Limits
