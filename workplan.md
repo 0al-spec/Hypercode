@@ -20,6 +20,9 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - Rules are **executable specifications** (SpecificationCore): grammar,
   validation and cascade resolution are composable `Specification` /
   `DecisionSpec` objects — the 0AL house style.
+- **Values cascade; contracts accumulate and narrow** (RFC §9.4). A more
+  specific selector may override a value, never weaken an inherited contract —
+  safety is not subject to specificity.
 
 ## Open decisions
 
@@ -84,6 +87,25 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 - [x] HC-103 Completion (type/class/id from AST, `.` and `#` triggers) + hover (Markdown: type/class/id/children) — `LSPServer.swift`
 
 *(Aim straight for LSP — the standard for VS Code & editor-agnostic. Hyperprompt's custom CLI+JSON-RPC was a documented MVP stopgap; see its ADR-001.)*
+
+## M8 — Spec-layer hardening (RFC §9 follow-through)
+
+P0 — what makes the novelty claim defensible:
+- ⬜ HC-110 `hypercode explain <node>.<property> [--ctx …]` — full cascade trace: winner *and* losing rules with specificity/source-order, contract checks; requires the resolver to retain the matched-rule list (today only the winner survives into the IR)
+- ⬜ HC-111 Monotonic selector contracts — property schemas attached via selectors; values cascade, contracts accumulate & narrow; weakening = resolution error (normative rule: RFC §9.4)
+- ⬜ HC-112 `hypercode.ir/v2` (breaking) — typed values (v1 is strings-only), `file` alongside `line`, specificity + source order, losing rules, contract results, per-node and per-document hashes, context echo, resolver name/version — `Schema/`
+
+P1 — built on v2:
+- ⬜ HC-113 `hypercode diff <old.ir> <new.ir>` — affected nodes/properties with reasons (which rule changed), node-hash based; the invalidation signal for incremental (re)generation
+- ⬜ HC-114 Runtime resolver boundary — document default build/generation-time mode vs. optional embedded runtime resolver (per-request context: caching, latency, provenance); decide library API or explicit out-of-scope — RFC §9.8
+- 🅿️ HC-115 OpenFeature bridge for the runtime mode *(only if HC-114 decides "in scope")*
+
+## M9 — Validation & adoption (DOCS/Positioning.md)
+
+- ⬜ HC-120 One deep Kustomize comparison demo — N tenants × M envs; metrics: duplicated structure, time-to-answer "why is this value here?", affected-module precision via IR diff; **must include** an own failure mode (specificity conflict) resolved via `explain`
+- ⬜ HC-121 Dogfooding as the primary adoption path — Hyperprompt / Ontology consume the resolved IR (consumer-side dialects & backends per `DOCS/Dialects.md` / `DOCS/Backends.md`)
+- 🅿️ HC-122 SLSA-like generation attestation chain — signed `.hc`/`.hcs` → IR hash → generator identity/version → artifact hashes → validator report (RFC §8, §9.8)
+- 🅿️ HC-123 Agent Passport / 0AL integration — attestation chain plugs into 0AL's signed-agent model
 
 ## Cross-cutting
 - [x] HC-090 Swift CI workflow (build + test) — `.github/workflows/swift.yml`
