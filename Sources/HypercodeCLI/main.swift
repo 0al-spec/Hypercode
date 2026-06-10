@@ -6,7 +6,7 @@ usage:
   hypercode parse    <file.hc>
   hypercode validate <file.hc> [--hcs <file.hcs>]
   hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
-  hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml]
+  hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml] [--ir-version 1|2]
   hypercode lsp                                                    # language server (LSP over stdio)
 
 global: [--diagnostics text|json]
@@ -125,6 +125,7 @@ func runEmit(_ args: [String]) throws {
     var hcsPath: String?
     var context: ResolutionContext = [:]
     var format: EmitFormat = .json
+    var irVersion: EmitVersion = .v2
 
     var index = 0
     while index < args.count {
@@ -147,6 +148,12 @@ func runEmit(_ args: [String]) throws {
                 fail("error: --format expects json|yaml")
             }
             format = parsed
+        case "--ir-version":
+            index += 1
+            guard index < args.count, let parsed = EmitVersion(rawValue: args[index]) else {
+                fail("error: --ir-version expects 1|2")
+            }
+            irVersion = parsed
         default:
             if hcPath == nil { hcPath = args[index] } else {
                 fail("error: unexpected argument '\(args[index])'")
@@ -160,7 +167,7 @@ func runEmit(_ args: [String]) throws {
     let forest = try Parser(source: readSource(hcPath)).parse()
     let sheet = try hcsPath.map { p in try CascadeSheetReader().read(readSource(p), file: p) } ?? CascadeSheet(rules: [])
     let resolved = Resolver(sheet: sheet, context: context).resolve(forest)
-    print(Emitter().emit(resolved, as: format), terminator: "")
+    print(Emitter().emit(resolved, version: irVersion, context: context, as: format), terminator: "")
 }
 
 // Pull the global `--diagnostics <format>` flag out of the argument list.

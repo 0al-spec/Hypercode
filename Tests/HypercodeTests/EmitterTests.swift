@@ -8,6 +8,8 @@ final class EmitterTests: XCTestCase {
         return Resolver(sheet: sheet).resolve(forest)
     }
 
+    // MARK: v1 (legacy)
+
     func testJSONEmit() throws {
         let json = Emitter().emit(try sample(), as: .json)
         XCTAssertTrue(json.contains("\"version\": \"hypercode.ir/v1\""))
@@ -26,5 +28,58 @@ final class EmitterTests: XCTestCase {
         XCTAssertTrue(yaml.contains("label:"))
         XCTAssertTrue(yaml.contains("value: Go"))
         XCTAssertTrue(yaml.contains("from: Button"))
+    }
+
+    // MARK: v2
+
+    func testV2JSONStructure() throws {
+        let forest = try Parser(source: "App\n  Button.primary#ok\n").parse()
+        let sheet = try CascadeSheetReader().read(
+            "Button:\n  count: 3\n  active: true\n  label: \"Go\"\n"
+        )
+        let resolved = Resolver(sheet: sheet).resolve(forest)
+        let json = Emitter().emit(resolved, version: .v2, context: ["env": "test"], as: .json)
+
+        XCTAssertTrue(json.contains("\"version\": \"hypercode.ir/v2\""))
+        XCTAssertTrue(json.contains("\"env\": \"test\""))
+        XCTAssertTrue(json.contains("\"name\": \"hypercode-swift\""))
+        XCTAssertTrue(json.contains("\"documentHash\""))
+        XCTAssertTrue(json.contains("\"hash\""))
+
+        // Typed values: int, bool, string
+        XCTAssertTrue(json.contains("\"value\": 3"))
+        XCTAssertTrue(json.contains("\"value\": true"))
+        XCTAssertTrue(json.contains("\"value\": \"Go\""))
+
+        // winner/losers/contracts present
+        XCTAssertTrue(json.contains("\"winner\""))
+        XCTAssertTrue(json.contains("\"losers\""))
+        XCTAssertTrue(json.contains("\"contracts\""))
+
+        // documentHash is a 64-char hex string
+        let hashRange = json.range(of: #""documentHash": "[0-9a-f]{64}""#,
+                                   options: .regularExpression)
+        XCTAssertNotNil(hashRange)
+    }
+
+    func testV2HashChangesWhenValueChanges() throws {
+        let hc = "App\n"
+        let hcsA = "App:\n  x: 1\n"
+        let hcsB = "App:\n  x: 2\n"
+
+        func emit(_ hcs: String) throws -> String {
+            let forest = try Parser(source: hc).parse()
+            let sheet = try CascadeSheetReader().read(hcs)
+            let resolved = Resolver(sheet: sheet).resolve(forest)
+            return Emitter().emit(resolved, version: .v2, as: .json)
+        }
+
+        let jsonA = try emit(hcsA)
+        let jsonB = try emit(hcsB)
+        XCTAssertNotEqual(jsonA, jsonB, "different resolved values must produce different hashes")
+
+        // Same content → identical hashes (determinism)
+        let jsonA2 = try emit(hcsA)
+        XCTAssertEqual(jsonA, jsonA2, "repeated emit of same input must produce identical output")
     }
 }
