@@ -263,6 +263,7 @@ Hypercode is therefore a new *combination* and a new *layer* — a context-resol
 | DI / wiring | Spring, Guice, Dagger | object-graph wiring, including compile-time code generation | declarative composition roots and AOT wiring are not new; Hypercode adds context resolution, provenance, and stable language-agnostic anchors |
 | Architecture as code | Structurizr / C4, TOSCA, BPMN | modeling, documentation, orchestration | these model or document systems; Hypercode aims at a codegen-ready resolved IR with provenance |
 | Interface contracts | OpenAPI, AsyncAPI, GraphQL | service-boundary contracts | adjacent layers: Hypercode nodes reference these contracts; generating them is a non-goal (§9.2) |
+| Runtime feature flags | OpenFeature, LaunchDarkly | dynamic, per-request flag evaluation against runtime contexts | a different binding time: flags decide values at runtime, Hypercode resolves at build/generation time into an IR (§9.8); the layers compose rather than compete |
 | Agent protocols & instructions | MCP, A2A, AGENTS.md | agent interoperability; coding-agent guidance | orthogonal; Hypercode can be the formal artifact such agents consume |
 | AI spec-driven development | GitHub Spec Kit, Kiro | natural-language specifications as the source of truth for code generation | shared thesis ("code as regenerated output"); Hypercode contributes the formally resolvable, diffable, provenance-carrying layer that Markdown cannot provide |
 | Software product lines (academic) | feature models (FODA), delta-oriented programming, CVL | one structure, many variants | white-label contexts are a product-line scenario; to our knowledge, cascade-with-specificity over context dimensions has not been explored as a variability mechanism in that literature |
@@ -273,7 +274,12 @@ The strongest objection to Hypercode's design comes from the configuration-langu
 
 1. **Determinism is machine-checked, not promised.** Cascade resolution (specificity, then source order) is specified operationally ([resolution semantics](../EBNF/Hypercode_Resolution.md)) and cross-checked by an executable [Lean 4 oracle](../SPEC/lean/). Resolution never depends on evaluation order.
 2. **Provenance is core semantics, not optional tooling.** Every resolved property records its winning selector and source location as part of the [IR contract](../Schema/hypercode-ir-v1.schema.json), not as an add-on. The CSS cascade became manageable the day developer tools showed where each style came from; Hypercode bakes that affordance into the format. A planned `hypercode explain` command will surface the full match trace, including losing rules.
-3. **Values cascade; contracts only narrow.** The planned contract layer (property schemas attached via selectors) is monotonic in CUE's spirit: a more specific rule may override a *value*, but may only tighten — never weaken — a *contract* established by a less specific rule. Behavior cascades; safety does not. This asymmetry is the design's direct answer to the GCL lesson.
+3. **Values cascade; contracts only narrow.** The planned contract layer (property schemas attached via selectors) is monotonic in CUE's spirit. Although that layer is not yet implemented, its governing rule is fixed normatively now:
+
+   > A more specific selector **MAY** override a value.
+   > A more specific selector **MUST NOT** weaken a contract established by a less specific rule; weakening is a resolution error.
+
+   For example, given a base contract `Database: pool_size: int >= 1`, a more specific `Database#main: pool_size: int >= 10` is valid (narrowing), while `Database#main: pool_size: int >= 0` is rejected (weakening). Behavior cascades; safety does not. This asymmetry is the design's direct answer to the GCL lesson.
 4. **Known failure modes are acknowledged.** Specificity wars and selector escalation are real CSS pathologies at scale. Countermeasures — origin/layer control analogous to CSS `@layer`, dangling-selector validation (already in `hypercode validate`), and explain tooling — are sequenced in the [work plan](../workplan.md) ahead of language surface that would amplify them.
 
 ### 9.5. Why a Stable Topology
@@ -294,8 +300,8 @@ Spec-driven development is converging on the view that the specification is the 
 
 ### 9.8. Acknowledged Limits
 
-* **Context is resolve-time.** `--ctx` is supplied when resolving; dynamic per-request context (e.g., a single deployment serving many tenants) would require embedding the resolver as a runtime library and is currently out of scope.
-* **No integrity chain yet.** As noted in §8, nothing verifies the provenance chain end-to-end (specification hash → IR hash → generated-code attestation). For the review-compression story to carry governance weight, such attestations are eventually required; they are deliberately deferred.
+* **Context binds at resolve time.** `--ctx` is supplied when resolving: Hypercode's default mode decides context at build/generation time. Runtime feature-flag systems (OpenFeature, LaunchDarkly) decide flag values per request at runtime — a different layer that composes with Hypercode rather than competing with it. Serving dynamic context from a single deployment (e.g., many tenants per process) would require embedding the resolver as a runtime library; that optional mode raises its own caching, latency, and provenance questions and is currently out of scope.
+* **No integrity chain yet.** As noted in §8, nothing verifies the chain end-to-end: signed `.hc`/`.hcs` → resolved-IR hash → generator identity and version → generated-artifact hashes → validator report. SLSA provides the reference vocabulary for such attestations. For the review-compression story to carry governance weight they are eventually required; they are deliberately deferred as future work.
 * **Type-system maturity.** Resolved values are untyped strings in IR v1, and the contract layer (§9.4) is planned, not implemented. Until both land (an IR v2 concern), Hypercode does not compete with typed configuration languages on safety.
 
 ## 10. Open Questions
@@ -320,7 +326,9 @@ Prior art surveyed in §9:
 * [Structurizr DSL](https://docs.structurizr.com/dsl) · [OASIS TOSCA](https://www.oasis-open.org/committees/tosca/) · [OMG BPMN](https://www.omg.org/spec/BPMN/) — architecture as code
 * [OpenAPI](https://www.openapis.org/) · [AsyncAPI](https://www.asyncapi.com/) — interface contracts
 * [Model Context Protocol](https://modelcontextprotocol.io/) · [A2A](https://a2a-protocol.org/) · [AGENTS.md](https://agents.md/) — agent protocols & instructions
+* [OpenFeature](https://openfeature.dev/) · [LaunchDarkly](https://launchdarkly.com/) — runtime feature flags
 * [GitHub Spec Kit](https://github.com/github/spec-kit) · [Kiro](https://kiro.dev/) · [Martin Fowler — Exploring Gen AI / spec-driven development](https://martinfowler.com/articles/exploring-gen-ai.html) — AI spec-driven development
+* [SLSA](https://slsa.dev/) — supply-chain attestation vocabulary (deferred integrity work, §9.8)
 * Kang et al., *Feature-Oriented Domain Analysis (FODA)*, CMU/SEI-90-TR-021, 1990 · Pohl, Böckle & van der Linden, *Software Product Line Engineering*, Springer, 2005 — software product lines
 
 ## 12. Change Log
@@ -329,6 +337,9 @@ Prior art surveyed in §9:
 
 * Replaced §9 "Comparison to Existing Concepts" with "Novelty and Prior Art": the novelty claim stated as a falsifiable combination; non-goals; a prior-art map (typed configuration languages, deployment overlays, OAM/KubeVela, DI, architecture-as-code, interface contracts, agent protocols, AI spec-driven development, software product lines); the override objection and its answer, including the *values cascade, contracts only narrow* rule; rationale for stable topology, provenance, and AI code generation; acknowledged limits.
 * Extended §11 References with the surveyed prior art.
+* Stated the cascade-safety rule normatively (§9.4): a more specific selector MAY override a value, MUST NOT weaken an inherited contract.
+* Drew the runtime boundary (§9.3, §9.8): build/generation-time resolution by default vs. runtime feature flags (OpenFeature, LaunchDarkly); embedded runtime resolution noted as an optional, out-of-scope mode.
+* Named SLSA as the reference vocabulary for the deferred integrity/attestation chain (§9.8).
 
 **Version 0.1** (2025-07-12):
 
