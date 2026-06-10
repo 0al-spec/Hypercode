@@ -68,7 +68,7 @@ hypercode resolve Examples/service.hc --hcs Examples/service.hcs --ctx env=produ
 - [Conceptual overview](OVERVIEW.md)
 - [RFC — the paradigm](RFC/Hypercode.md)
 - Formal specs: [`.hc` syntax (BNF)](EBNF/Hypercode_Syntax.md) · [resolution semantics](EBNF/Hypercode_Resolution.md)
-- Architecture: [overview](DOCS/Architecture.md) · [backends & adapters](DOCS/Backends.md) · [core vs dialects](DOCS/Dialects.md)
+- Architecture: [overview](DOCS/Architecture.md) · [backends & adapters](DOCS/Backends.md) · [core vs dialects](DOCS/Dialects.md) · [positioning](DOCS/Positioning.md)
 - [Resolved-graph IR schema](Schema/hypercode-ir-v1.schema.json) — the cross-implementation contract
 - [Lean 4 cascade oracle](SPEC/lean/) — machine-checked agreement with the resolver
 - [Work plan](workplan.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
