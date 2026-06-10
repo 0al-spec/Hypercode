@@ -4,25 +4,32 @@ import SpecificationCore
 /// against which `@dimension[value]` guards are evaluated.
 public typealias ResolutionContext = [String: String]
 
-/// Where a resolved value came from: the winning selector and its source line.
+/// Where a resolved value came from: the winning selector, file, and source line.
 public struct Provenance: Equatable, Sendable {
     public let selector: Selector
+    public let file: String?
     public let line: Int
 
-    public init(selector: Selector, line: Int) {
+    public init(selector: Selector, file: String? = nil, line: Int) {
         self.selector = selector
+        self.file = file
         self.line = line
     }
 }
 
-/// A resolved property value with its provenance.
+/// A resolved property value with its cascade winner, all losing matches, and provenance.
 public struct ResolvedValue: Equatable, Sendable {
-    public let value: String
+    public let value: TypedValue
     public let provenance: Provenance
+    public let winner: Match
+    /// Losing candidates sorted descending by (specificity, source order).
+    public let losers: [Match]
 
-    public init(value: String, provenance: Provenance) {
+    public init(value: TypedValue, provenance: Provenance, winner: Match, losers: [Match]) {
         self.value = value
         self.provenance = provenance
+        self.winner = winner
+        self.losers = losers
     }
 }
 
@@ -59,7 +66,7 @@ extension Rule {
 
 /// A single rule's contribution of a value to one property key.
 private struct Contribution {
-    let value: String
+    let value: TypedValue
     let precedence: Precedence
     let provenance: Provenance
 }
@@ -76,16 +83,40 @@ private struct Precedence: Comparable {
 }
 
 /// Decides the winning value for a property from its competing contributions —
-/// the cascade, expressed as a `DecisionSpec`.
+/// the cascade, expressed as a `DecisionSpec`. Retains all losing candidates for
+/// the explain command and IR v2.
 private struct PropertyCascade: DecisionSpec {
     typealias Context = [Contribution]
     typealias Result = ResolvedValue
 
     func decide(_ candidates: [Contribution]) -> ResolvedValue? {
-        guard let winner = candidates.max(by: { $0.precedence < $1.precedence }) else {
-            return nil
+        guard !candidates.isEmpty else { return nil }
+        let sorted = candidates.sorted { $0.precedence > $1.precedence }
+        let w = sorted[0]
+        let winner = Match(
+            value: w.value,
+            selector: w.provenance.selector,
+            file: w.provenance.file,
+            line: w.provenance.line,
+            specificity: w.precedence.specificity,
+            order: w.precedence.order
+        )
+        let losers = sorted.dropFirst().map { c in
+            Match(
+                value: c.value,
+                selector: c.provenance.selector,
+                file: c.provenance.file,
+                line: c.provenance.line,
+                specificity: c.precedence.specificity,
+                order: c.precedence.order
+            )
         }
-        return ResolvedValue(value: winner.value, provenance: winner.provenance)
+        return ResolvedValue(
+            value: w.value,
+            provenance: w.provenance,
+            winner: winner,
+            losers: losers
+        )
     }
 }
 
@@ -112,7 +143,7 @@ public struct Resolver {
         for rule in sheet.rules where rule.isActive(in: context) {
             guard selectorSpec(rule.selector).isSatisfiedBy(nodeContext) else { continue }
             let precedence = Precedence(specificity: rule.specificity, order: rule.order)
-            let provenance = Provenance(selector: rule.selector, line: rule.line)
+            let provenance = Provenance(selector: rule.selector, file: rule.file, line: rule.line)
             for (key, value) in rule.properties {
                 contributions[key, default: []].append(
                     Contribution(value: value, precedence: precedence, provenance: provenance)

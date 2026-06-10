@@ -68,7 +68,7 @@ func runResolve(_ args: [String]) throws {
     guard let hcsPath else { fail("error: resolve needs --hcs <file.hcs>\n\n\(usage)", code: 64) }
 
     let forest = try Parser(source: readSource(hcPath)).parse()
-    let sheet = try CascadeSheetReader().read(readSource(hcsPath))
+    let sheet = try CascadeSheetReader().read(readSource(hcsPath), file: hcsPath)
     let resolved = Resolver(sheet: sheet, context: context).resolve(forest)
     print(ResolvedNode.tree(resolved), terminator: "")
 }
@@ -106,7 +106,7 @@ func runValidate(_ args: [String]) throws {
     // .hc diagnostics point at the .hc file; .hcs diagnostics at the .hcs file.
     var located = tagged(validator.validate(forest), file: hcPath)
     if let hcsPath {
-        let sheet = try CascadeSheetReader().read(readSource(hcsPath))
+        let sheet = try CascadeSheetReader().read(readSource(hcsPath), file: hcsPath)
         located += tagged(validator.validate(sheet, against: forest), file: hcsPath)
     }
     switch diagnosticsFormat {
@@ -158,7 +158,7 @@ func runEmit(_ args: [String]) throws {
     guard let hcPath else { fail("error: emit needs a .hc file\n\n\(usage)", code: 64) }
 
     let forest = try Parser(source: readSource(hcPath)).parse()
-    let sheet = try hcsPath.map { try CascadeSheetReader().read(readSource($0)) } ?? CascadeSheet(rules: [])
+    let sheet = try hcsPath.map { p in try CascadeSheetReader().read(readSource(p), file: p) } ?? CascadeSheet(rules: [])
     let resolved = Resolver(sheet: sheet, context: context).resolve(forest)
     print(Emitter().emit(resolved, as: format), terminator: "")
 }
