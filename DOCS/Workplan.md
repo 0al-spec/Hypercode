@@ -10,7 +10,7 @@ Companion to [workplan.md](../workplan.md) M8 task stubs and [RFC §9](../RFC/Hy
 | D1 | `TypedValue` = union `string/int/double/bool`; inferred at parse time in `CascadeSheetReader.parseProperty` (no new syntax). |
 | D2 | Losers retained inside `ResolvedValue` as `losers: [Match]`; public API, because `explain` and IR v2 both need them. |
 | D3 | `explain` command address: `<selector> [property]` positional (avoids `Node.prop` ambiguity with class selectors). |
-| D4 | SHA-256 without swift-crypto: vendor ~100-line pure-Swift implementation with NIST vectors in `Tests/`. ⚠️ Implementation deviated: shipped as a CryptoKit wrapper (Apple-only) — see R11 below. |
+| D4 | ~~SHA-256 without swift-crypto: vendor pure-Swift implementation~~ Superseded 2026-06-11 (R11): use `swift-crypto` — same CryptoKit API, Linux-capable; accepted as the second dependency. Shipped CryptoKit wrapper is interim. |
 | D5 | `@contract:` block syntax (fits existing outline-reader mechanics, not `@contract Selector:` which needs new grammar). |
 
 ## PR sequence
@@ -236,7 +236,7 @@ Update `EBNF/Hypercode_Syntax.md` with `.hcs` contract block grammar.
 | File | PR-1 | PR-2 | PR-3 | PR-4 |
 |---|---|---|---|---|
 | `Sources/Hypercode/HCS/CascadeSheet.swift` | TypedValue, Match, Rule.file | — | — | Contract types |
-| `Sources/Hypercode/HCS/Resolver.swift` | Provenance.file, losers retained | — | — | contract eval |
+| `Sources/Hypercode/HCS/Resolver.swift` | Provenance.file, losers retained | — | — | — (value validation → PR-5, see R9) |
 | `Sources/Hypercode/HCS/CascadeSheetReader.swift` | parseProperty types, read(file:) | — | — | @contract: block |
 | `Sources/Hypercode/Emit/Emitter.swift` | TypedValue render | v2 emitter | — | contracts in v2 |
 | `Sources/HypercodeCLI/main.swift` | pass file to reader | --ir-version flag | explain subcommand | — |
@@ -289,24 +289,30 @@ All findings reproduced against `feat/hc-111-contracts` (69a38f0). R1–R8 block
   quoted strings (bare `driver: sqlite` is valid), header `Date:` stale, and the HC21xx
   semantics table belongs in `Hypercode_Resolution.md`.
 
-### B — Needs decision / separate task
+### B — Decided 2026-06-11, pending implementation
 
 - ⬜ **R9 — contract value validation is not implemented.** Values are never checked
   against contracts (`timeout: 999` under `int <= 300` passes; wrong-type values pass).
-  The PR-4 files table lists `Resolver` "contract eval" — undelivered. Decide: implement
-  value checking (new HC2104 diagnostic) in #22, or re-scope to a follow-up ticket and
-  fix the table.
+  **Decision:** separate **PR-5** — value validation against contracts with a new
+  **HC2104** diagnostic (type mismatch, bounds violation, missing required property).
+  #22 stays scoped to grammar + monotonicity; files table fixed (`Resolver` row moved
+  to PR-5).
 - ⬜ **R10 — v1 emitter is now lossy for numeric-looking strings.** `version: 1.10` →
   `"1.1"`, `build: 0123` → `"123"` under `--ir-version 1` (regression vs pre-PR-1 raw
-  strings). Decide: store the source lexeme alongside `TypedValue`, or document as a
-  known v1 limitation.
+  strings). **Decision:** store the source lexeme alongside the typed value; v1 emits
+  the lexeme byte-for-byte, v2 keeps typed values. Implement in the open chain before
+  merge.
 - ⬜ **R11 — D4 deviation.** SHA-256 shipped as a CryptoKit wrapper, not the approved
-  vendored pure-Swift implementation; core is now Apple-only (no Linux). Decide: accept
-  (rewrite D4 above accordingly) or switch to `swift-crypto` for portability.
+  vendored pure-Swift implementation; core is now Apple-only (no Linux).
+  **Decision:** switch to `swift-crypto` (same API surface, Linux-capable); accept it
+  as the project's second dependency after SpecificationCore. D4 row updated.
 - ⬜ **R12 — absent-bound semantics underspecified.** A more-specific contract that
-  omits `min`/`max` is not flagged as widening (current behavior = "omit inherits via
-  intersection"). Specify this in the RFC contracts section either way.
+  omits `min`/`max` is not flagged as widening. **Decision:** omitted bound = inherited
+  via interval intersection — the effective contract for a node is the intersection of
+  all applicable contracts. Current validator behavior is correct; fix is to specify
+  this normatively in the RFC contracts section (bundle with the R8 RFC update).
 - ⬜ **R13 — public API construction gaps.** `Match`, `PropertyTrace`, `NodeTrace` have
-  no public inits (project practice: explicit `public init` on public types), so external
-  consumers cannot build `ResolvedValue`. `ResolvedValue` also duplicates winner data
-  (`value`/`provenance` ≡ `winner.*`) with no invariant — derive them from `winner`.
+  no public inits, so external consumers cannot build `ResolvedValue`; `ResolvedValue`
+  duplicates winner data with no invariant. **Decision:** add explicit `public init` to
+  all three (project practice) and add `ResolvedValue.init(winner:losers:)` deriving
+  `value`/`provenance` from `winner` so inconsistent construction is impossible.
