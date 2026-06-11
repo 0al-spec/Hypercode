@@ -4,7 +4,7 @@
 
 **Version:** 0.2
 
-**Date:** July 12, 2025
+**Date:** June 11, 2026
 
 **Author:** Egor Merkushev
 
@@ -125,9 +125,15 @@ A `.hcs` file contains cascade rules and optional contract blocks.
 <rule-block>      ::= <selector> ":" <newline>
                        <INDENT> { <property-line> } <DEDENT>
 <property-line>   ::= <identifier> ":" <scalar> <newline>
-<scalar>          ::= <quoted-string> | <number> | "true" | "false"
+<scalar>          ::= <quoted-string> | <bare-scalar>
 <quoted-string>   ::= '"' { <char> } '"' | "'" { <char> } "'"
+<bare-scalar>     ::= any run of characters up to end of line (trimmed)
 ```
+
+A bare scalar is type-inferred by the reader: `true`/`false` → bool, integral
+form → int, decimal form without letters → double, anything else → string
+(e.g. `driver: sqlite` is a valid bare string). Quoting forces string. The
+source lexeme is preserved verbatim for v1 IR round-tripping.
 
 ### 6.2 Selectors
 
@@ -171,13 +177,12 @@ More-specific selectors may only **narrow** constraints — never widen them (mo
     timeout: int >= 10 <= 200   # narrows — allowed
 ```
 
-#### Monotonicity rules (enforced by `ContractValidator`)
+#### Semantics
 
-| Violation | Code | Description |
-|-----------|------|-------------|
-| Type changed | HC2101 | More-specific selector uses a different type |
-| Interval widened | HC2102 | More-specific selector lowers min or raises max |
-| Required → optional | HC2103 | More-specific selector marks a required property as `[?]` |
+How contracts accumulate, intersect, and which monotonicity violations are
+diagnostics (HC2101–HC2103) is defined in the
+[resolution semantics](Hypercode_Resolution.md) — this document covers syntax
+only.
 
 ## 7. Future Work
 
@@ -191,7 +196,9 @@ More-specific selectors may only **narrow** constraints — never widen them (mo
 
 * Added Section 6: `.hcs` cascade sheet syntax (rules, selectors, dimension blocks).
 * Added `@contract:` block grammar (HC-111): constraint-line syntax, `[?]` optional marker, bounds `>=`/`<=`.
-* Documented monotonicity rules HC2101/HC2102/HC2103.
+* Bare scalars documented (type inference, lexeme preservation); semantics
+  (contract accumulation, monotonicity diagnostics) live in
+  `Hypercode_Resolution.md`.
 
 **Version 0.1** (2025-07-12)
 

@@ -2,9 +2,9 @@
 
 **Status:** Draft
 
-**Version:** 0.1.1
+**Version:** 0.2
 
-**Date:** June 10, 2026
+**Date:** June 11, 2026
 
 **Author:** Egor Merkushev
 
@@ -273,13 +273,15 @@ Hypercode is therefore a new *combination* and a new *layer* — a context-resol
 The strongest objection to Hypercode's design comes from the configuration-language community itself. Drawing on Google's experience with GCL — where inheritance and overrides became a chronic source of configuration bugs — the designers of CUE made unification order-independent and *forbade* overrides entirely: in CUE, the origin of a value is never in doubt precisely because no rule can silently replace another. Hypercode deliberately reintroduces overriding, so the choice requires a defense. It has four parts:
 
 1. **Determinism is machine-checked, not promised.** Cascade resolution (specificity, then source order) is specified operationally ([resolution semantics](../EBNF/Hypercode_Resolution.md)) and cross-checked by an executable [Lean 4 oracle](../SPEC/lean/). Resolution is independent of rule application and traversal order: the outcome is fully determined by the pair (specificity, source order).
-2. **Provenance is core semantics, not optional tooling.** Every resolved property records its winning selector and source line as part of the [IR contract](../Schema/hypercode-ir-v1.schema.json), not as an add-on. The CSS cascade became manageable the day developer tools showed where each style came from; Hypercode bakes that affordance into the format. A planned `hypercode explain` command will surface the full match trace, including losing rules.
-3. **Values cascade; contracts only narrow.** The planned contract layer (property schemas attached via selectors) is monotonic in CUE's spirit. Although that layer is not yet implemented, its governing rule is fixed normatively now:
+2. **Provenance is core semantics, not optional tooling.** Every resolved property records its winning selector and source line as part of the [IR contract](../Schema/hypercode-ir-v1.schema.json), not as an add-on. The CSS cascade became manageable the day developer tools showed where each style came from; Hypercode bakes that affordance into the format. The `hypercode explain` command surfaces the full match trace, including losing rules with their specificity and source order.
+3. **Values cascade; contracts only narrow.** The contract layer (property schemas attached via selectors in `@contract:` blocks) is monotonic in CUE's spirit. Its governing rule:
 
    > A more specific selector **MAY** override a value.
    > A more specific selector **MUST NOT** weaken a contract established by a less specific rule; weakening is a resolution error.
 
    For example, given a base contract `Database: pool_size: int >= 1`, a more specific `Database#main: pool_size: int >= 10` is valid (narrowing), while `Database#main: pool_size: int >= 0` is rejected (weakening). Behavior cascades; safety does not. This asymmetry is the design's direct answer to the GCL lesson.
+
+   Two refinements make the rule precise (normative semantics in the [resolution specification](../EBNF/Hypercode_Resolution.md)). First, contracts **accumulate by intersection**: every contract matching a node governs it simultaneously, and an omitted bound is not a statement — it inherits through the intersection. Second, as in the CSS cascade, specificity relates two contracts only when at least one node in the document is matched by both selectors; contracts on disjoint parts of the tree are independent. Monotonicity violations are resolution errors (HC2101 type change, HC2102 interval widening, HC2103 required→optional); validating resolved *values* against the effective contract is the next layer (HC2104, in progress).
 4. **Known failure modes are acknowledged.** Specificity wars and selector escalation are real CSS pathologies at scale. Countermeasures — origin/layer control analogous to CSS `@layer`, dangling-selector validation (already in `hypercode validate`), and explain tooling — are sequenced in the [work plan](../workplan.md) ahead of language surface that would amplify them.
 
 ### 9.5. Why a Stable Topology
@@ -295,14 +297,14 @@ In layered configuration systems the recurring operational question is "where di
 Spec-driven development is converging on the view that the specification is the durable artifact and code is increasingly a regenerated output. Today that movement runs almost entirely on natural-language Markdown, which neither resolves deterministically nor diffs semantically. Hypercode's intended role is the formal substrate underneath it, with three consequences:
 
 * **Confined nondeterminism.** The specification side resolves deterministically (machine-checked, §9.4); nondeterminism is confined to the generation step, where it can be validated against the resolved graph.
-* **A fixed generated/durable boundary.** Classic MDA demanded complete models; an LLM generator tolerates incompleteness, so `.hc` can stay a skeleton. The node boundary fixes the division of labor: orchestration and wiring are derived from the resolved graph (mechanically where possible), while durable leaf implementations live behind generated interfaces and are never overwritten. Node-level hashes over the resolved IR — a planned `hypercode.ir/v2` addition (see the [work plan](../workplan.md)), not part of IR v1 — will provide the invalidation signal for incremental regeneration.
+* **A fixed generated/durable boundary.** Classic MDA demanded complete models; an LLM generator tolerates incompleteness, so `.hc` can stay a skeleton. The node boundary fixes the division of labor: orchestration and wiring are derived from the resolved graph (mechanically where possible), while durable leaf implementations live behind generated interfaces and are never overwritten. Node-level hashes over the resolved IR (`hypercode.ir/v2`, [schema](../Schema/hypercode-ir-v2.schema.json)) provide the invalidation signal for incremental regeneration: the hash covers the stable resolved content — type, class, id, resolved values, child hashes — so a provenance-only change (a different rule winning with the same value) does not invalidate.
 * **Review compression.** The unit of human review shifts from generated code to the specification diff: humans approve a small, formally resolved change; machines expand it into code and validate the expansion against the same graph.
 
 ### 9.8. Acknowledged Limits
 
 * **Context binds at resolve time.** `--ctx` is supplied when resolving: Hypercode's default mode decides context at build/generation time. Runtime feature-flag systems (OpenFeature, LaunchDarkly) decide flag values per request at runtime — a different layer that composes with Hypercode rather than competing with it. Serving dynamic context from a single deployment (e.g., many tenants per process) would require embedding the resolver as a runtime library; that optional mode raises its own caching, latency, and provenance questions and is currently out of scope.
 * **No integrity chain yet.** As noted in §8, nothing verifies the chain end-to-end: signed `.hc`/`.hcs` → resolved-IR hash → generator identity and version → generated-artifact hashes → validator report. SLSA provides the reference vocabulary for such attestations. For the review-compression story to carry governance weight they are eventually required; they are deliberately deferred as future work.
-* **Type-system maturity.** Resolved values are untyped strings in IR v1, and the contract layer (§9.4) is planned, not implemented. Until both land (an IR v2 concern), Hypercode does not compete with typed configuration languages on safety.
+* **Type-system maturity.** IR v2 carries typed values (string/int/double/bool, inferred at parse time with the source lexeme preserved), and the contract layer (§9.4) ships declarations and monotonicity validation. Enforcement of resolved values against the effective contract (HC2104) is in progress; until it lands, Hypercode still does not compete with typed configuration languages on safety. IR v1 remains strings-only and is kept for backward compatibility.
 
 ## 10. Open Questions
 
@@ -332,6 +334,13 @@ Prior art surveyed in §9:
 * Kang et al., *Feature-Oriented Domain Analysis (FODA)*, CMU/SEI-90-TR-021, 1990 · Pohl, Böckle & van der Linden, *Software Product Line Engineering*, Springer, 2005 — software product lines
 
 ## 12. Change Log
+
+**Version 0.2** (2026-06-11):
+
+* Contracts are now part of the language model (HC-111): `@contract:` block syntax in `.hcs`, accumulation by intersection (an omitted bound inherits), specificity relating only contracts that can govern the same node, monotonicity diagnostics HC2101–HC2103 (§9.4); value-level enforcement (HC2104) declared in progress.
+* `hypercode explain` (HC-110) shipped: full cascade trace with winner and losing rules (§9.4).
+* `hypercode.ir/v2` (HC-112) shipped: typed values with lexeme preservation, winner/losers per property, contract echo, per-node and per-document SHA-256 hashes over stable resolved content (§9.7, §9.8).
+* Normative contract semantics delegated to the resolution specification (`EBNF/Hypercode_Resolution.md` §7).
 
 **Version 0.1.1** (2026-06-10):
 

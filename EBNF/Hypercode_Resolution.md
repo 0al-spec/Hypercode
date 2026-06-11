@@ -2,9 +2,9 @@
 
 **Status:** Draft
 
-**Version:** 0.1
+**Version:** 0.2
 
-**Date:** June 2, 2026
+**Date:** June 11, 2026
 
 **Author:** Egor Merkushev
 
@@ -101,7 +101,65 @@ ctx ⊢ n ⇓ ⟨ n.type, n.class, n.id,
 
 The whole document resolves by applying this to each top-level node.
 
-## 7. Conformance
+## 7. Contracts (HC-111)
+
+A `@contract:` block (syntax: [Hypercode_Syntax.md §6.3](Hypercode_Syntax.md))
+attaches property constraints to selectors. Values cascade (last sufficiently
+specific writer wins); contracts **accumulate** — every applicable contract
+governs the node simultaneously.
+
+### 7.1 Effective contract — intersection
+
+For a node `n` and property key `k`, the effective contract is the
+**intersection** of all contracts whose selector matches `n` and that
+constrain `k`:
+
+```text
+applicable(n, k) = { c ∈ contracts | match(c.selector, n) ∧ k ∈ c.properties }
+
+effective(n, k).type     = the common type of all applicable (must agree)
+effective(n, k).min      = max over declared lower bounds
+effective(n, k).max      = min over declared upper bounds
+effective(n, k).required = true if any applicable contract requires k
+```
+
+An **omitted bound is not a statement** — it inherits through the
+intersection. A more specific contract that re-declares `k` without `min`
+keeps the inherited lower bound; it does not lift it.
+
+### 7.2 Monotonicity validation
+
+Specificity relates two contracts only when they can govern the same node —
+exactly as in the CSS cascade. The validator therefore checks a pair of
+contracts only if **at least one node in the document matches both
+selectors**. For such a pair where `spec(A) < spec(B)`:
+
+| Violation | Code | Description |
+|-----------|------|-------------|
+| Type changed | HC2101 | `B` declares a different type than `A` for the same key |
+| Interval widened | HC2102 | `B` lowers a declared `min` or raises a declared `max` of `A` |
+| Required → optional | HC2103 | `B` marks `[?]` a key that `A` requires |
+
+At **equal specificity** both contracts apply with equal force; a type
+conflict makes the intersection unsatisfiable and is reported as HC2101.
+Bounds at equal specificity simply intersect and are not a conflict.
+
+All three are `error`-severity diagnostics; `hypercode validate` exits
+non-zero.
+
+### 7.3 Value validation (planned)
+
+Checking the resolved values themselves against the effective contract
+(type conformance, bounds, required presence) is diagnostic **HC2104**,
+scheduled as PR-5 in [DOCS/Workplan.md](../DOCS/Workplan.md).
+
+### 7.4 IR
+
+IR v2 echoes the applicable contracts per property, sorted by ascending
+specificity (declaration order as tie-breaker), so a consumer can re-derive
+the effective contract without re-parsing the sheet.
+
+## 8. Conformance
 
 The reference fixtures are [`Examples/service.hc`](../Examples/service.hc)
 and [`service.hcs`](../Examples/service.hcs), resolved in
@@ -114,12 +172,15 @@ and provenance. Any conforming resolver must reproduce those results, e.g.:
 hypercode resolve Examples/service.hc --hcs Examples/service.hcs --ctx env=production
 ```
 
-## 8. Deferred
+## 9. Deferred
 
 - **Origin / importance.** RFC §4.2.3 lists origin/importance above specificity
   in the precedence order. There is no syntax for it yet (no `!important`,
   no override-file origin), so the current precedence key is
   `(specificity, source-order)`. When syntax is introduced, it becomes the
   most-significant component of `precedence`.
-- **Typed scalars.** Property values are currently raw strings (quotes stripped).
-  Typed scalars (bool/int/…) arrive with real YAML input, if ever needed.
+- **Contract value validation.** §7.3 — HC2104, planned as PR-5.
+
+*(Typed scalars, previously deferred, landed with IR v2: bare scalars are
+type-inferred at parse time, with the source lexeme preserved for v1
+round-tripping.)*
