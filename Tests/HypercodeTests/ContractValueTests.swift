@@ -162,6 +162,25 @@ final class ContractValueTests: XCTestCase {
         XCTAssertEqual(prod[0].code, "HC2104")
     }
 
+    func testIntPrecisionBeyondDoubleRange() throws {
+        // 9007199254740993 = 2^53 + 1 rounds to the same Double as 2^53, so a
+        // Double-domain comparison would miss the violation. Integer bounds
+        // must compare in the Int domain.
+        let diags = try diagnostics(
+            hc: "App\n  service\n",
+            hcs: """
+            service:
+              big: 9007199254740993
+
+            @contract:
+              service:
+                big: int <= 9007199254740992
+            """
+        )
+        XCTAssertEqual(diags.count, 1, "2^53 + 1 must violate an upper bound of 2^53")
+        XCTAssertTrue(diags[0].message.contains("exceeds upper bound"))
+    }
+
     func testViolationPointsAtWinningRule() throws {
         let diags = try diagnostics(
             hc: "App\n  service\n",

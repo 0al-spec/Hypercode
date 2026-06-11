@@ -84,12 +84,12 @@ public struct ContractValueValidator {
 
         // Type conformance. An int satisfies a float contract (ℤ ⊂ ℝ);
         // everything else must match exactly.
-        let numeric: Double?
+        let numeric: NumericValue?
         switch (rv.value.kind, constraint.type) {
         case (.int(let i), .int), (.int(let i), .float):
-            numeric = Double(i)
+            numeric = .int(i)
         case (.double(let d), .float):
-            numeric = d
+            numeric = .double(d)
         case (.string, .string), (.bool, .bool):
             numeric = nil
         default:
@@ -102,14 +102,14 @@ public struct ContractValueValidator {
 
         var diags: [Diagnostic] = []
         if let n = numeric {
-            if let min = constraint.min, n < min {
+            if let min = constraint.min, n.isBelow(min) {
                 diags.append(Diagnostic(
                     severity: .error, code: "HC2104",
                     message: "contract violation for '\(key)': \(rv.value.rawString) is below lower bound \(min) from contract '\(selector)'",
                     file: winner.file, range: range
                 ))
             }
-            if let max = constraint.max, n > max {
+            if let max = constraint.max, n.isAbove(max) {
                 diags.append(Diagnostic(
                     severity: .error, code: "HC2104",
                     message: "contract violation for '\(key)': \(rv.value.rawString) exceeds upper bound \(max) from contract '\(selector)'",
@@ -121,6 +121,34 @@ public struct ContractValueValidator {
     }
 
     // MARK: - Helpers
+
+    /// A resolved numeric value compared against `Double` bounds without
+    /// losing integer precision: `Double(i)` rounds beyond 2^53, which could
+    /// hide a violation like `9007199254740993` under `int <= 9007199254740992`.
+    /// Integer values compare in the `Int` domain whenever the bound is an
+    /// exactly representable integer.
+    private enum NumericValue {
+        case int(Int)
+        case double(Double)
+
+        func isBelow(_ bound: Double) -> Bool {
+            switch self {
+            case .double(let d): return d < bound
+            case .int(let i):
+                if let exact = Int(exactly: bound) { return i < exact }
+                return Double(i) < bound
+            }
+        }
+
+        func isAbove(_ bound: Double) -> Bool {
+            switch self {
+            case .double(let d): return d > bound
+            case .int(let i):
+                if let exact = Int(exactly: bound) { return i > exact }
+                return Double(i) > bound
+            }
+        }
+    }
 
     private func kindName(_ kind: TypedValue.Kind) -> String {
         switch kind {
