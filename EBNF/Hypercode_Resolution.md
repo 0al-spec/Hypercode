@@ -147,11 +147,17 @@ Bounds at equal specificity simply intersect and are not a conflict.
 All three are `error`-severity diagnostics; `hypercode validate` exits
 non-zero.
 
-### 7.3 Value validation (planned)
+### 7.3 Value validation (HC2104)
 
-Checking the resolved values themselves against the effective contract
-(type conformance, bounds, required presence) is diagnostic **HC2104**,
-scheduled as PR-5 in [DOCS/Workplan.md](../DOCS/Workplan.md).
+Resolved values are checked against every applicable contract
+(`ContractValueValidator`): type conformance (an int value satisfies a
+`float` contract, ℤ ⊂ ℝ; everything else must match exactly), declared
+bounds, and required presence. Because resolution is context-dependent,
+this check runs on the resolved graph — the same sheet can be clean under
+one `--ctx` and violating under another, so `hypercode validate` accepts
+`--ctx key=value`. Violations point at the winning rule (where the value
+was written); a missing required property points at the contract that
+demands it.
 
 ### 7.4 IR
 
@@ -179,8 +185,6 @@ hypercode resolve Examples/service.hc --hcs Examples/service.hcs --ctx env=produ
   no override-file origin), so the current precedence key is
   `(specificity, source-order)`. When syntax is introduced, it becomes the
   most-significant component of `precedence`.
-- **Contract value validation.** §7.3 — HC2104, planned as PR-5.
-
 *(Typed scalars, previously deferred, landed with IR v2: bare scalars are
 type-inferred at parse time, with the source lexeme preserved for v1
 round-tripping.)*

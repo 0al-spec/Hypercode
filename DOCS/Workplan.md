@@ -291,12 +291,13 @@ All findings reproduced against `feat/hc-111-contracts` (69a38f0). R1–R8 block
 
 ### B — Decided 2026-06-11, pending implementation
 
-- ⬜ **R9 — contract value validation is not implemented.** Values are never checked
+- ✅ **R9 — contract value validation is not implemented.** Values are never checked
   against contracts (`timeout: 999` under `int <= 300` passes; wrong-type values pass).
   **Decision:** separate **PR-5** — value validation against contracts with a new
   **HC2104** diagnostic (type mismatch, bounds violation, missing required property).
   #22 stays scoped to grammar + monotonicity; files table fixed (`Resolver` row moved
-  to PR-5).
+  to PR-5). **Done:** `ContractValueValidator` on `feat/hc-111-value-validation`;
+  `validate` gained `--ctx`; violations point at the winning rule.
 - ✅ **R10 — v1 emitter is now lossy for numeric-looking strings.** `version: 1.10` →
   `"1.1"`, `build: 0123` → `"123"` under `--ir-version 1` (regression vs pre-PR-1 raw
   strings). **Decision:** store the source lexeme alongside the typed value; v1 emits

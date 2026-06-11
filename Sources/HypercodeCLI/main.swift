@@ -4,7 +4,7 @@ import Hypercode
 let usage = """
 usage:
   hypercode parse    <file.hc>
-  hypercode validate <file.hc> [--hcs <file.hcs>]
+  hypercode validate <file.hc> [--hcs <file.hcs>] [--ctx key=value]...
   hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
   hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml] [--ir-version 1|2]
   hypercode explain  <file.hc> --hcs <file.hcs> [--ctx key=value]... <selector> [property]
@@ -77,6 +77,7 @@ func runResolve(_ args: [String]) throws {
 func runValidate(_ args: [String]) throws {
     var hcPath: String?
     var hcsPath: String?
+    var context: ResolutionContext = [:]
 
     var index = 0
     while index < args.count {
@@ -85,6 +86,14 @@ func runValidate(_ args: [String]) throws {
             index += 1
             guard index < args.count else { fail("error: --hcs needs a path") }
             hcsPath = args[index]
+        case "--ctx":
+            index += 1
+            guard index < args.count else { fail("error: --ctx needs key=value") }
+            let pair = args[index]
+            guard let equals = pair.firstIndex(of: "=") else {
+                fail("error: --ctx expects key=value, got '\(pair)'")
+            }
+            context[String(pair[..<equals])] = String(pair[pair.index(after: equals)...])
         default:
             if hcPath == nil { hcPath = args[index] } else {
                 fail("error: unexpected argument '\(args[index])'")
@@ -109,6 +118,15 @@ func runValidate(_ args: [String]) throws {
     if let hcsPath {
         let sheet = try CascadeSheetReader().read(readSource(hcsPath), file: hcsPath)
         located += tagged(validator.validate(sheet, against: forest), file: hcsPath)
+        // Value-level contract checks run on the resolved graph (HC2104) —
+        // resolution is context-dependent, hence validate accepts --ctx.
+        let resolved = Resolver(sheet: sheet, context: context).resolve(forest)
+        located += tagged(
+            ContractValueValidator().validate(
+                resolved: resolved, commands: forest, contracts: sheet.contracts
+            ),
+            file: hcsPath
+        )
     }
     switch diagnosticsFormat {
     case .json:
