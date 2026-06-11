@@ -1,19 +1,41 @@
 /// A typed property value inferred at parse time from the raw scalar text.
-public enum TypedValue: Equatable, Sendable {
-    case string(String)
-    case int(Int)
-    case double(Double)
-    case bool(Bool)
-
-    /// String representation used by the v1 emitter and backward-compatible accessors.
-    public var rawString: String {
-        switch self {
-        case .string(let s): return s
-        case .int(let i): return String(i)
-        case .double(let d): return String(d)
-        case .bool(let b): return b ? "true" : "false"
-        }
+/// Keeps the source lexeme alongside the typed kind so the v1 emitter
+/// round-trips values byte-for-byte (`1.10` stays `1.10`, `0123` stays `0123`).
+public struct TypedValue: Equatable, Sendable {
+    /// The inferred scalar kind with its canonical value.
+    public enum Kind: Equatable, Sendable {
+        case string(String)
+        case int(Int)
+        case double(Double)
+        case bool(Bool)
     }
+
+    public let kind: Kind
+    /// The source text as written in the sheet (after unquoting).
+    public let lexeme: String
+
+    public init(kind: Kind, lexeme: String) {
+        self.kind = kind
+        self.lexeme = lexeme
+    }
+
+    // Factories with canonical lexemes, so call sites read like enum cases.
+    public static func string(_ value: String) -> TypedValue {
+        TypedValue(kind: .string(value), lexeme: value)
+    }
+    public static func int(_ value: Int) -> TypedValue {
+        TypedValue(kind: .int(value), lexeme: String(value))
+    }
+    public static func double(_ value: Double) -> TypedValue {
+        TypedValue(kind: .double(value), lexeme: String(value))
+    }
+    public static func bool(_ value: Bool) -> TypedValue {
+        TypedValue(kind: .bool(value), lexeme: value ? "true" : "false")
+    }
+
+    /// Source-faithful string representation — what the author wrote.
+    /// Used by the v1 emitter and `explain` text output.
+    public var rawString: String { lexeme }
 }
 
 /// A context guard from an `@dimension[value]` block, e.g. `@env[production]`.
@@ -68,6 +90,22 @@ public struct Match: Equatable, Sendable {
     public let line: Int
     public let specificity: Specificity
     public let order: Int
+
+    public init(
+        value: TypedValue,
+        selector: Selector,
+        file: String? = nil,
+        line: Int,
+        specificity: Specificity,
+        order: Int
+    ) {
+        self.value = value
+        self.selector = selector
+        self.file = file
+        self.line = line
+        self.specificity = specificity
+        self.order = order
+    }
 }
 
 // MARK: - Contract types

@@ -17,17 +17,20 @@ public struct Provenance: Equatable, Sendable {
     }
 }
 
-/// A resolved property value with its cascade winner, all losing matches, and provenance.
+/// A resolved property value with its cascade winner and all losing matches.
+/// `value` and `provenance` are derived from `winner`, so an inconsistent
+/// instance cannot be constructed.
 public struct ResolvedValue: Equatable, Sendable {
-    public let value: TypedValue
-    public let provenance: Provenance
     public let winner: Match
     /// Losing candidates sorted descending by (specificity, source order).
     public let losers: [Match]
 
-    public init(value: TypedValue, provenance: Provenance, winner: Match, losers: [Match]) {
-        self.value = value
-        self.provenance = provenance
+    public var value: TypedValue { winner.value }
+    public var provenance: Provenance {
+        Provenance(selector: winner.selector, file: winner.file, line: winner.line)
+    }
+
+    public init(winner: Match, losers: [Match]) {
         self.winner = winner
         self.losers = losers
     }
@@ -91,32 +94,19 @@ private struct PropertyCascade: DecisionSpec {
 
     func decide(_ candidates: [Contribution]) -> ResolvedValue? {
         guard !candidates.isEmpty else { return nil }
-        let sorted = candidates.sorted { $0.precedence > $1.precedence }
-        let w = sorted[0]
-        let winner = Match(
-            value: w.value,
-            selector: w.provenance.selector,
-            file: w.provenance.file,
-            line: w.provenance.line,
-            specificity: w.precedence.specificity,
-            order: w.precedence.order
-        )
-        let losers = sorted.dropFirst().map { c in
-            Match(
-                value: c.value,
-                selector: c.provenance.selector,
-                file: c.provenance.file,
-                line: c.provenance.line,
-                specificity: c.precedence.specificity,
-                order: c.precedence.order
-            )
-        }
-        return ResolvedValue(
-            value: w.value,
-            provenance: w.provenance,
-            winner: winner,
-            losers: losers
-        )
+        let matches = candidates
+            .sorted { $0.precedence > $1.precedence }
+            .map { c in
+                Match(
+                    value: c.value,
+                    selector: c.provenance.selector,
+                    file: c.provenance.file,
+                    line: c.provenance.line,
+                    specificity: c.precedence.specificity,
+                    order: c.precedence.order
+                )
+            }
+        return ResolvedValue(winner: matches[0], losers: Array(matches.dropFirst()))
     }
 }
 

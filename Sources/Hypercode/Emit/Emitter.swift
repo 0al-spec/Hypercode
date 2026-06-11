@@ -167,7 +167,7 @@ public struct Emitter {
     }
 
     private static func typedValueIR(_ v: TypedValue) -> IR {
-        switch v {
+        switch v.kind {
         case .string(let s): return .string(s)
         case .int(let i):    return .int(i)
         case .double(let d): return .double(d)

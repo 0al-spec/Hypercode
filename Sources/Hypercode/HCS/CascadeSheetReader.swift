@@ -201,11 +201,13 @@ public struct CascadeSheetReader {
     }
 
     private func inferType(_ s: String) -> TypedValue {
-        if s == "true" { return .bool(true) }
-        if s == "false" { return .bool(false) }
-        if let i = Int(s) { return .int(i) }
-        if let d = Double(s), !s.contains(where: { $0.isLetter }) { return .double(d) }
-        return .string(s)
+        if s == "true" { return TypedValue(kind: .bool(true), lexeme: s) }
+        if s == "false" { return TypedValue(kind: .bool(false), lexeme: s) }
+        if let i = Int(s) { return TypedValue(kind: .int(i), lexeme: s) }
+        if let d = Double(s), !s.contains(where: { $0.isLetter }) {
+            return TypedValue(kind: .double(d), lexeme: s)
+        }
+        return TypedValue(kind: .string(s), lexeme: s)
     }
 
     // MARK: - Public selector parsing (used by `hypercode explain`)
