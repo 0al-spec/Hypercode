@@ -114,7 +114,12 @@ public struct CascadeSheetReader {
         guard !key.isEmpty else {
             throw HCSError(message: "empty property key", line: node.line.number)
         }
-        return (key, inferType(unquote(split.right)))
+        // Quoting forces string: `zip: "00123"` and `flag: "false"` must stay
+        // strings. Type inference runs only on unquoted scalars.
+        if isQuoted(split.right) {
+            return (key, .string(unquote(split.right)))
+        }
+        return (key, inferType(String(split.right)))
     }
 
     private func inferType(_ s: String) -> TypedValue {
@@ -123,6 +128,10 @@ public struct CascadeSheetReader {
         if let i = Int(s) { return .int(i) }
         if let d = Double(s), !s.contains(where: { $0.isLetter }) { return .double(d) }
         return .string(s)
+    }
+
+    private func isQuoted(_ s: Substring) -> Bool {
+        s.count >= 2 && ((s.first == "\"" && s.last == "\"") || (s.first == "'" && s.last == "'"))
     }
 
     // MARK: - Public selector parsing (used by `hypercode explain`)
