@@ -38,6 +38,12 @@ public struct TypedValue: Equatable, Sendable {
     public var rawString: String { lexeme }
 }
 
+// String interpolation (e.g. the `hypercode resolve` tree rendering) must show
+// the scalar text, not the enum case spelling.
+extension TypedValue: CustomStringConvertible {
+    public var description: String { rawString }
+}
+
 /// A context guard from an `@dimension[value]` block, e.g. `@env[production]`.
 public struct ContextGuard: Equatable, Sendable {
     public let dimension: String
