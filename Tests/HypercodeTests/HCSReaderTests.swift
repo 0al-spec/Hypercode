@@ -62,4 +62,29 @@ final class HCSReaderTests: XCTestCase {
         XCTAssertEqual(sheet.rules[0].selector, .type("Database"))
         XCTAssertEqual(sheet.rules[1].selector, .klass("pooled"))
     }
+
+    func testQuotedScalarsStayStrings() throws {
+        // Quoting forces string — numeric-looking and boolean-looking literals
+        // must not be type-inferred, and leading zeros must survive.
+        let sheet = try read([
+            "Service:",
+            "  zip: \"00123\"",
+            "  flag: 'false'",
+            "  port: 8080",
+            "  active: true",
+        ])
+        let props = sheet.rules[0].properties
+        XCTAssertEqual(props["zip"], .string("00123"))
+        XCTAssertEqual(props["flag"], .string("false"))
+        XCTAssertEqual(props["port"], .int(8080))
+        XCTAssertEqual(props["active"], .bool(true))
+    }
+
+    func testTypedValueInterpolatesAsScalarText() {
+        // The resolve tree rendering interpolates values directly; the enum
+        // must print scalar text, not its case spelling.
+        XCTAssertEqual("\(TypedValue.int(5000))", "5000")
+        XCTAssertEqual("\(TypedValue.bool(true))", "true")
+        XCTAssertEqual("\(TypedValue.string("debug"))", "debug")
+    }
 }
