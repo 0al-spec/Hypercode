@@ -66,7 +66,7 @@
       "properties": {
         "value": {
           "description": "The winning resolved value (typed).",
-          "oneOf": [
+          "anyOf": [
             { "type": "string" },
             { "type": "integer" },
             { "type": "number" },
@@ -102,7 +102,7 @@
         "line": { "type": "integer" },
         "file": { "type": "string" },
         "value": {
-          "oneOf": [
+          "anyOf": [
             { "type": "string" },
             { "type": "integer" },
             { "type": "number" },
