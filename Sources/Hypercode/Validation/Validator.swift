@@ -42,7 +42,7 @@ public struct Validator {
                 ? nil
                 : Diagnostic(severity: .warning, code: "HC3002", message: "selector '\(rule.selector)' matches no node", range: SourceRange(SourcePosition(line: rule.line, column: 1)))
         }
-        let contractDiags = ContractValidator().validate(sheet.contracts)
+        let contractDiags = ContractValidator().validate(sheet.contracts, against: forest)
         return dangling + contractDiags
     }
 

@@ -1,12 +1,12 @@
-import Testing
+import XCTest
 @testable import Hypercode
 
 // MARK: - CascadeSheetReader: @contract: parsing
 
-@Suite("Contract parsing") struct ContractParsingTests {
-    let reader = CascadeSheetReader()
+final class ContractParsingTests: XCTestCase {
+    private let reader = CascadeSheetReader()
 
-    @Test func parsesContractBlock() throws {
+    func testParsesContractBlock() throws {
         let src = """
         @contract:
           service:
@@ -14,18 +14,18 @@ import Testing
             name: string
         """
         let sheet = try reader.read(src)
-        #expect(sheet.contracts.count == 1)
+        XCTAssertEqual(sheet.contracts.count, 1)
         let sc = sheet.contracts[0]
-        #expect(sc.selector == .type("service"))
-        #expect(sc.properties["timeout"]?.type == .int)
-        #expect(sc.properties["timeout"]?.min == 1)
-        #expect(sc.properties["timeout"]?.max == 300)
-        #expect(sc.properties["timeout"]?.required == true)
-        #expect(sc.properties["name"]?.type == .string)
-        #expect(sc.properties["name"]?.required == true)
+        XCTAssertEqual(sc.selector, .type("service"))
+        XCTAssertEqual(sc.properties["timeout"]?.type, .int)
+        XCTAssertEqual(sc.properties["timeout"]?.min, 1)
+        XCTAssertEqual(sc.properties["timeout"]?.max, 300)
+        XCTAssertEqual(sc.properties["timeout"]?.required, true)
+        XCTAssertEqual(sc.properties["name"]?.type, .string)
+        XCTAssertEqual(sc.properties["name"]?.required, true)
     }
 
-    @Test func parsesOptionalConstraint() throws {
+    func testParsesOptionalConstraint() throws {
         let src = """
         @contract:
           service:
@@ -33,12 +33,12 @@ import Testing
         """
         let sheet = try reader.read(src)
         let sc = sheet.contracts[0]
-        #expect(sc.properties["timeout"]?.required == false)
-        #expect(sc.properties["timeout"]?.min == 1)
-        #expect(sc.properties["timeout"]?.max == nil)
+        XCTAssertEqual(sc.properties["timeout"]?.required, false)
+        XCTAssertEqual(sc.properties["timeout"]?.min, 1)
+        XCTAssertNil(sc.properties["timeout"]?.max)
     }
 
-    @Test func parsesMultipleContractSelectors() throws {
+    func testParsesMultipleContractSelectors() throws {
         let src = """
         @contract:
           service:
@@ -47,12 +47,12 @@ import Testing
             replicas: int >= 2
         """
         let sheet = try reader.read(src)
-        #expect(sheet.contracts.count == 2)
-        #expect(sheet.contracts[0].selector == .type("service"))
-        #expect(sheet.contracts[1].selector == .klass("primary"))
+        XCTAssertEqual(sheet.contracts.count, 2)
+        XCTAssertEqual(sheet.contracts[0].selector, .type("service"))
+        XCTAssertEqual(sheet.contracts[1].selector, .klass("primary"))
     }
 
-    @Test func parsesContractAlongsideRules() throws {
+    func testParsesContractAlongsideRules() throws {
         let src = """
         service:
           timeout: 30
@@ -62,94 +62,125 @@ import Testing
             timeout: int >= 1
         """
         let sheet = try reader.read(src)
-        #expect(sheet.rules.count == 1)
-        #expect(sheet.contracts.count == 1)
+        XCTAssertEqual(sheet.rules.count, 1)
+        XCTAssertEqual(sheet.contracts.count, 1)
     }
 
-    @Test func rejectsUnknownConstraintType() {
+    func testRejectsUnknownConstraintType() {
         let src = """
         @contract:
           service:
             x: colour
         """
-        #expect(throws: HCSError.self) { try reader.read(src) }
+        XCTAssertThrowsError(try reader.read(src))
     }
 }
 
 // MARK: - ContractValidator: monotonicity
 
-@Suite("ContractValidator") struct ContractValidatorTests {
-    let validator = ContractValidator()
+final class ContractValidatorTests: XCTestCase {
+    private let validator = ContractValidator()
 
     private func contract(_ selector: Hypercode.Selector,
-                          _ properties: [String: PropertyContract]) -> SelectorContract {
-        SelectorContract(selector: selector, properties: properties, line: 1)
+                          _ properties: [String: PropertyContract],
+                          line: Int = 1) -> SelectorContract {
+        SelectorContract(selector: selector, properties: properties, line: line)
     }
 
-    @Test func noViolation_identicalConstraints() {
+    private func forest(_ source: String) -> [Command] {
+        try! Parser(source: source).parse()
+    }
+
+    /// A document where `service` and `.primary` match the same node.
+    private var overlapping: [Command] { forest("App\n  service.primary\n") }
+
+    func testNoViolationIdenticalConstraints() {
         let less = contract(.type("service"), ["timeout": PropertyContract(type: .int, required: true, min: 1, max: 300)])
         let more = contract(.klass("primary"), ["timeout": PropertyContract(type: .int, required: true, min: 1, max: 300)])
-        #expect(validator.validate([less, more]).isEmpty)
+        XCTAssertTrue(validator.validate([less, more], against: overlapping).isEmpty)
     }
 
-    @Test func noViolation_moreSpecificNarrows() {
+    func testNoViolationMoreSpecificNarrows() {
         let less = contract(.type("service"), ["timeout": PropertyContract(type: .int, required: false, min: 1, max: 300)])
         let more = contract(.klass("primary"), ["timeout": PropertyContract(type: .int, required: true, min: 10, max: 200)])
-        #expect(validator.validate([less, more]).isEmpty)
+        XCTAssertTrue(validator.validate([less, more], against: overlapping).isEmpty)
     }
 
-    @Test func typeMismatch_HC2101() {
+    func testTypeMismatchHC2101() {
         let less = contract(.type("service"), ["timeout": PropertyContract(type: .int)])
         let more = contract(.klass("primary"), ["timeout": PropertyContract(type: .float)])
-        let diags = validator.validate([less, more])
-        #expect(diags.count == 1)
-        #expect(diags[0].code == "HC2101")
+        let diags = validator.validate([less, more], against: overlapping)
+        XCTAssertEqual(diags.count, 1)
+        XCTAssertEqual(diags[0].code, "HC2101")
     }
 
-    @Test func intervalWidening_lowerBound_HC2102() {
-        let less = contract(.type("service"), ["timeout": PropertyContract(type: .int, min: 5, max: nil)])
-        let more = contract(.klass("primary"), ["timeout": PropertyContract(type: .int, min: 1, max: nil)])
-        let diags = validator.validate([less, more])
-        #expect(diags.count == 1)
-        #expect(diags[0].code == "HC2102")
-        #expect(diags[0].message.contains("lower bound"))
+    func testIntervalWideningLowerBoundHC2102() {
+        let less = contract(.type("service"), ["timeout": PropertyContract(type: .int, min: 5)])
+        let more = contract(.klass("primary"), ["timeout": PropertyContract(type: .int, min: 1)])
+        let diags = validator.validate([less, more], against: overlapping)
+        XCTAssertEqual(diags.count, 1)
+        XCTAssertEqual(diags[0].code, "HC2102")
+        XCTAssertTrue(diags[0].message.contains("lower bound"))
     }
 
-    @Test func intervalWidening_upperBound_HC2102() {
+    func testIntervalWideningUpperBoundHC2102() {
         let less = contract(.type("service"), ["timeout": PropertyContract(type: .int, max: 100)])
         let more = contract(.klass("primary"), ["timeout": PropertyContract(type: .int, max: 200)])
-        let diags = validator.validate([less, more])
-        #expect(diags.count == 1)
-        #expect(diags[0].code == "HC2102")
-        #expect(diags[0].message.contains("upper bound"))
+        let diags = validator.validate([less, more], against: overlapping)
+        XCTAssertEqual(diags.count, 1)
+        XCTAssertEqual(diags[0].code, "HC2102")
+        XCTAssertTrue(diags[0].message.contains("upper bound"))
     }
 
-    @Test func optionalWeakening_HC2103() {
+    func testOptionalWeakeningHC2103() {
         let less = contract(.type("service"), ["name": PropertyContract(type: .string, required: true)])
         let more = contract(.klass("primary"), ["name": PropertyContract(type: .string, required: false)])
-        let diags = validator.validate([less, more])
-        #expect(diags.count == 1)
-        #expect(diags[0].code == "HC2103")
+        let diags = validator.validate([less, more], against: overlapping)
+        XCTAssertEqual(diags.count, 1)
+        XCTAssertEqual(diags[0].code, "HC2103")
     }
 
-    @Test func noViolation_unsharedKeys() {
+    func testNoViolationUnsharedKeys() {
         let less = contract(.type("service"), ["timeout": PropertyContract(type: .int)])
         let more = contract(.klass("primary"), ["replicas": PropertyContract(type: .int)])
-        #expect(validator.validate([less, more]).isEmpty)
+        XCTAssertTrue(validator.validate([less, more], against: overlapping).isEmpty)
     }
 
-    @Test func noViolation_sameSpecificity() {
-        // Same specificity — neither is "more specific", so no check applies.
+    // Review R3: specificity only relates contracts that can govern the same
+    // node — disjoint selectors must not be compared.
+    func testNoViolationDisjointSelectors() {
+        let doc = forest("App\n  service\n  cache.slow\n")
         let a = contract(.type("service"), ["timeout": PropertyContract(type: .int, max: 100)])
-        let b = contract(.type("database"), ["timeout": PropertyContract(type: .int, max: 200)])
-        #expect(validator.validate([a, b]).isEmpty)
+        let b = contract(.klass("slow"), ["timeout": PropertyContract(type: .int, max: 500)])
+        XCTAssertTrue(validator.validate([a, b], against: doc).isEmpty,
+                      "selectors matching different nodes must not be related by specificity")
+    }
+
+    // Review R4: at equal specificity both contracts apply with equal force —
+    // a type conflict makes the intersection unsatisfiable.
+    func testEqualSpecificityTypeConflictHC2101() {
+        let doc = forest("App\n  service\n")
+        let a = contract(.type("service"), ["timeout": PropertyContract(type: .int)], line: 2)
+        let b = contract(.type("service"), ["timeout": PropertyContract(type: .float)], line: 4)
+        let diags = validator.validate([a, b], against: doc)
+        XCTAssertEqual(diags.count, 1)
+        XCTAssertEqual(diags[0].code, "HC2101")
+        XCTAssertTrue(diags[0].message.contains("equal specificity"))
+    }
+
+    func testEqualSpecificityCompatibleContractsAreClean() {
+        let doc = forest("App\n  service\n")
+        let a = contract(.type("service"), ["timeout": PropertyContract(type: .int, max: 100)])
+        let b = contract(.type("service"), ["timeout": PropertyContract(type: .int, max: 200)])
+        XCTAssertTrue(validator.validate([a, b], against: doc).isEmpty,
+                      "same type at equal specificity intersects fine — bounds intersect, not conflict")
     }
 }
 
 // MARK: - Validator integration
 
-@Suite("Validator contract integration") struct ValidatorContractIntegrationTests {
-    @Test func validatorRunsContractChecks() throws {
+final class ValidatorContractIntegrationTests: XCTestCase {
+    func testValidatorRunsContractChecks() throws {
         let src = """
         @contract:
           service:
@@ -158,8 +189,8 @@ import Testing
             timeout: float
         """
         let sheet = try CascadeSheetReader().read(src)
-        let diags = Validator().validate(sheet, against: [])
-        let codes = diags.map(\.code)
-        #expect(codes.contains("HC2101"))
+        let doc = try Parser(source: "App\n  service.primary\n").parse()
+        let diags = Validator().validate(sheet, against: doc)
+        XCTAssertTrue(diags.map(\.code).contains("HC2101"))
     }
 }
