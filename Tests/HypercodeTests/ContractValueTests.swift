@@ -193,9 +193,10 @@ final class ContractValueTests: XCTestCase {
                 timeout: int <= 300
             """
         )
+        XCTAssertEqual(diags.count, 1)
         // Provenance records the winning rule's header line (line 1: "service:"),
         // consistent with v1 IR "line" — not the property line within the block.
-        XCTAssertEqual(diags[0].range?.start.line, 1,
+        XCTAssertEqual(diags.first?.range?.start.line, 1,
                        "diagnostic points at the winning rule, not the contract declaration")
     }
 }

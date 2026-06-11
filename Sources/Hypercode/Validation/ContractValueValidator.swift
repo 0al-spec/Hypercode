@@ -32,6 +32,11 @@ public struct ContractValueValidator {
         contracts: [SelectorContract],
         into diagnostics: inout [Diagnostic]
     ) {
+        // The resolver preserves tree shape, so the two arrays are parallel by
+        // construction — fail fast in debug builds rather than silently skip
+        // validation of trailing nodes.
+        assert(commands.count == resolved.count,
+               "command/resolved tree shape mismatch (\(commands.count) vs \(resolved.count))")
         for (cmd, node) in zip(commands, resolved) {
             let context = NodeContext(node: cmd, ancestors: ancestors)
             let applicable = contracts.filter { selectorSpec($0.selector).isSatisfiedBy(context) }

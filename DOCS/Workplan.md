@@ -294,8 +294,8 @@ All findings reproduced against `feat/hc-111-contracts` (69a38f0). R1–R8 block
 
 ### B — Decided 2026-06-11, pending implementation
 
-- ✅ **R9 — contract value validation is not implemented.** Values are never checked
-  against contracts (`timeout: 999` under `int <= 300` passes; wrong-type values pass).
+- ✅ **R9 — contract value validation was not implemented.** Values were never checked
+  against contracts (`timeout: 999` under `int <= 300` passed; wrong-type values passed).
   **Decision:** separate **PR-5** — value validation against contracts with a new
   **HC2104** diagnostic (type mismatch, bounds violation, missing required property).
   #22 stays scoped to grammar + monotonicity; files table fixed (`Resolver` row moved
