@@ -62,6 +62,59 @@ final class EmitterTests: XCTestCase {
         XCTAssertNotNil(hashRange)
     }
 
+    func testV2EveryNodeCarriesAHash() throws {
+        // Regression (review R1): child nodes used to miss the schema-required
+        // "hash" field — it was only post-inserted into root nodes.
+        let forest = try Parser(source: "App\n  Service\n    Database\n").parse()
+        let sheet = try CascadeSheetReader().read("Service:\n  timeout: 30\n")
+        let resolved = Resolver(sheet: sheet).resolve(forest)
+        let json = Emitter().emit(resolved, version: .v2, as: .json)
+
+        let hashCount = json.components(separatedBy: "\"hash\": \"").count - 1
+        XCTAssertEqual(hashCount, 3, "all three nodes (App, Service, Database) must carry a hash")
+    }
+
+    func testV2HugeNumberDoesNotCrash() throws {
+        // Regression (review R2): a numeral beyond Int.max parses as Double and
+        // used to trap in Int(_:) inside the whole-number JSON branch.
+        let forest = try Parser(source: "App\n").parse()
+        let sheet = try CascadeSheetReader().read("App:\n  huge: 99999999999999999999999999\n")
+        let resolved = Resolver(sheet: sheet).resolve(forest)
+        let json = Emitter().emit(resolved, version: .v2, as: .json)
+        XCTAssertTrue(json.contains("1e+26"), "huge double must render in scientific notation")
+    }
+
+    func testV2ContractsSortedBySpecificityAscending() throws {
+        // Review R8: contracts[] must accumulate narrowest-last.
+        let forest = try Parser(source: "App\n  Service.primary\n").parse()
+        let sheet = try CascadeSheetReader().read("""
+        Service:
+          timeout: 30
+
+        @contract:
+          .primary:
+            timeout: int <= 200
+          Service:
+            timeout: int <= 300
+        """)
+        let resolved = Resolver(sheet: sheet).resolve(forest)
+        let json = Emitter().emit(
+            resolved, version: .v2, commands: forest, contracts: sheet.contracts, as: .json
+        )
+        // Compare positions inside the contracts array only — the winner entry
+        // also carries a "selector" key and must not skew the check.
+        guard let contractsStart = json.range(of: "\"contracts\": [") else {
+            return XCTFail("contracts array must be present")
+        }
+        let tail = json[contractsStart.upperBound...]
+        guard let serviceRange = tail.range(of: #""selector": "Service""#),
+              let classRange = tail.range(of: #""selector": ".primary""#) else {
+            return XCTFail("both contracts must appear in the IR")
+        }
+        XCTAssertTrue(serviceRange.lowerBound < classRange.lowerBound,
+                      "ascending specificity: Service (0,0,1) before .primary (0,1,0)")
+    }
+
     func testV2HashChangesWhenValueChanges() throws {
         let hc = "App\n"
         let hcsA = "App:\n  x: 1\n"
