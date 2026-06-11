@@ -37,7 +37,9 @@ public enum TypedValue: Equatable, Sendable {
 }
 ```
 
-Inference order in `parseProperty`: try `Int`, then `Double`, then `true`/`false`, else `.string`.
+Inference order in `parseProperty`: quoted scalars are always `.string` (quoting
+forces string); unquoted scalars try `true`/`false`, then `Int`, then `Double`
+(rejected if it contains letters, so `1e5` stays a string), else `.string`.
 
 ### Rule gains `file`
 
