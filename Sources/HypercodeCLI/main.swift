@@ -220,9 +220,12 @@ func runExplain(_ args: [String]) throws {
     guard let hcPath else { fail("error: explain needs a .hc file\n\n\(usage)", code: 64) }
     guard let hcsPath else { fail("error: explain needs --hcs <file.hcs>\n\n\(usage)", code: 64) }
     guard !positional.isEmpty else { fail("error: explain needs a <selector>\n\n\(usage)", code: 64) }
+    guard positional.count <= 2 else {
+        fail("error: unexpected argument '\(positional[2])' — explain takes <selector> [property]\n\n\(usage)", code: 64)
+    }
 
     let selectorText = positional[0]
-    let propertyFilter: String? = positional.count >= 2 ? positional[1] : nil
+    let propertyFilter: String? = positional.count == 2 ? positional[1] : nil
 
     let selectorParsed: Hypercode.Selector
     do {

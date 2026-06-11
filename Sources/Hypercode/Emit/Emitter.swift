@@ -101,7 +101,7 @@ public struct Emitter {
             ("context", .object(context.keys.sorted().map { ($0, .string(context[$0]!)) })),
             ("resolver", .object([
                 ("name", .string("hypercode-swift")),
-                ("version", .string("0.5.0")),
+                ("version", .string(HypercodeVersion.current)),
             ])),
             ("documentHash", .string(docHash)),
             ("nodes", .array(rendered.map(\.ir))),

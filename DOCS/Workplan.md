@@ -37,7 +37,9 @@ public enum TypedValue: Equatable, Sendable {
 }
 ```
 
-Inference order in `parseProperty`: try `Int`, then `Double`, then `true`/`false`, else `.string`.
+Inference order in `parseProperty`: quoted scalars are always `.string` (quoting
+forces string); unquoted scalars try `true`/`false`, then `Int`, then `Double`
+(rejected if it contains letters, so `1e5` stays a string), else `.string`.
 
 ### Rule gains `file`
 
@@ -120,13 +122,14 @@ New `Schema/hypercode-ir-v2.schema.json`:
 `hypercode emit ... [--ir-version 1|2]` — default v2.
 v1 emitter kept intact for `--ir-version 1`.
 
-### Hashing (D4)
+### Hashing (D4, superseded — see decisions table)
 
-Vendor `Sources/Hypercode/Crypto/SHA256.swift` (~100 lines, FIPS 180-4).
-Test vectors from NIST FIPS 180-4 in `Tests/SHA256Tests.swift`.
+`Sources/Hypercode/Crypto/SHA256.swift` is a thin wrapper over the platform
+SHA-256 (CryptoKit in this PR; switched to `swift-crypto` later in the chain
+per R11). Test vectors from NIST FIPS 180-4 in `Tests/SHA256Tests.swift`.
 
 Node hash input: deterministic JSON of `{type, class?, id?, properties: {key: value}, childHashes: []}`.
-Document hash: SHA-256 of newline-joined sorted node hashes (BFS order).
+Document hash: SHA-256 of newline-joined root-node hashes in document order.
 
 ### CI
 
