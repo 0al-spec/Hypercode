@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://0al-spec.github.io/Hypercode/schema/hypercode-ir-v2.schema.json",
   "title": "Hypercode IR v2",
-  "description": "Hypercode resolved-graph IR v2: typed values, cascade trace (winner + losers), per-node SHA-256 hashes, context echo, resolver metadata. Contracts field is empty until HC-111.",
+  "description": "Hypercode resolved-graph IR v2: typed values, cascade trace (winner + losers), per-node SHA-256 hashes, context echo, resolver metadata, and accumulated selector contracts (HC-111).",
   "type": "object",
   "required": ["version", "context", "resolver", "documentHash", "nodes"],
   "additionalProperties": false,
@@ -80,7 +80,7 @@
         },
         "contracts": {
           "type": "array",
-          "description": "Accumulated selector contracts (HC-111). Empty until contracts are added to .hcs files.",
+          "description": "Contracts governing this property (HC-111), ascending specificity — narrowest last. Empty when no @contract: block matches the node.",
           "items": { "$ref": "#/$defs/contractEntry" }
         }
       }
