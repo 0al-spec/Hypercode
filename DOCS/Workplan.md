@@ -257,31 +257,31 @@ All findings reproduced against `feat/hc-111-contracts` (69a38f0). R1–R8 block
 
 ### A — Blocking #22
 
-- ⬜ **R1 — IR v2 violates its own schema: child nodes have no `hash`.**
+- ✅ **R1 — IR v2 violates its own schema: child nodes have no `hash`.**
   `Emitter.intermediateV2` post-inserts `hash` only into root forest nodes; the schema
   requires it on every `resolvedNode`. Fix: compute/pass the hash inside `nodeV2`
   recursion instead of the zip-insert. Add a nested-document schema-shape test.
-- ⬜ **R2 — emitter crash on large numerals.** `Emitter.json` `.double` whole-number
+- ✅ **R2 — emitter crash on large numerals.** `Emitter.json` `.double` whole-number
   branch does `String(Int(number))`; a 26-digit `.hcs` value parses as `Double(1e26)`
   and traps (`exit 133`). Render without `Int` conversion; add a regression test.
   YAML path is unaffected.
-- ⬜ **R3 — ContractValidator false positive on disjoint selectors.** Pairs are compared
+- ✅ **R3 — ContractValidator false positive on disjoint selectors.** Pairs are compared
   purely by specificity; `Service { timeout <= 100 }` vs `.slow { timeout <= 500 }`
   errors (HC2102) even when no node matches both. Gate the pairwise check on
   "∃ node in forest matched by both selectors" — `Validator.validate(_:against:)`
   already has the forest.
-- ⬜ **R4 — equal-specificity contract conflicts pass silently.** Two `Service:` blocks
+- ✅ **R4 — equal-specificity contract conflicts pass silently.** Two `Service:` blocks
   with `timeout: int` vs `timeout: float` produce no diagnostic (guard skips
   `specificity ==`). At minimum flag type conflicts at equal specificity.
-- ⬜ **R5 — Foundation leak in core.** `Explainer.renderMatch` uses
+- ✅ **R5 — Foundation leak in core.** `Explainer.renderMatch` uses
   `padding(toLength:withPad:startingAt:)` (Foundation/NSString) with no import in file —
   compiles only via Swift 5 leaky member lookup; breaks under `MemberImportVisibility`.
   Hand-roll the padding; core stays Foundation-free.
-- ⬜ **R6 — compiler warning.** `Explainer.swift:113` `var line1` never mutated → `let`.
-- ⬜ **R7 — test framework consistency.** `ContractTests.swift` uses Swift Testing;
+- ✅ **R6 — compiler warning.** `Explainer.swift:113` `var line1` never mutated → `let`.
+- ✅ **R7 — test framework consistency.** `ContractTests.swift` uses Swift Testing;
   the other 14 test files (incl. SHA256/Explain/Emitter tests from this same chain)
   use XCTest. Convert to XCTest (or record a deliberate migration decision).
-- ⬜ **R8 — undelivered plan items.** Root `workplan.md` M8: HC-110/111/112 still ⬜
+- ✅ **R8 — undelivered plan items.** Root `workplan.md` M8: HC-110/111/112 still ⬜
   (mark only on merge); `RFC/Hypercode.md` not bumped (PR-4 promised v0.2; §Limitations
   "untyped strings in IR v1" needs a v2 note); IR `contracts[]` not sorted by ascending
   specificity as specified; `Package.swift` `0.5.0-dev` version comment missing (PR-1);
@@ -297,21 +297,21 @@ All findings reproduced against `feat/hc-111-contracts` (69a38f0). R1–R8 block
   **HC2104** diagnostic (type mismatch, bounds violation, missing required property).
   #22 stays scoped to grammar + monotonicity; files table fixed (`Resolver` row moved
   to PR-5).
-- ⬜ **R10 — v1 emitter is now lossy for numeric-looking strings.** `version: 1.10` →
+- ✅ **R10 — v1 emitter is now lossy for numeric-looking strings.** `version: 1.10` →
   `"1.1"`, `build: 0123` → `"123"` under `--ir-version 1` (regression vs pre-PR-1 raw
   strings). **Decision:** store the source lexeme alongside the typed value; v1 emits
   the lexeme byte-for-byte, v2 keeps typed values. Implement in the open chain before
   merge.
-- ⬜ **R11 — D4 deviation.** SHA-256 shipped as a CryptoKit wrapper, not the approved
+- ✅ **R11 — D4 deviation.** SHA-256 shipped as a CryptoKit wrapper, not the approved
   vendored pure-Swift implementation; core is now Apple-only (no Linux).
   **Decision:** switch to `swift-crypto` (same API surface, Linux-capable); accept it
   as the project's second dependency after SpecificationCore. D4 row updated.
-- ⬜ **R12 — absent-bound semantics underspecified.** A more-specific contract that
+- ✅ **R12 — absent-bound semantics underspecified.** A more-specific contract that
   omits `min`/`max` is not flagged as widening. **Decision:** omitted bound = inherited
   via interval intersection — the effective contract for a node is the intersection of
   all applicable contracts. Current validator behavior is correct; fix is to specify
   this normatively in the RFC contracts section (bundle with the R8 RFC update).
-- ⬜ **R13 — public API construction gaps.** `Match`, `PropertyTrace`, `NodeTrace` have
+- ✅ **R13 — public API construction gaps.** `Match`, `PropertyTrace`, `NodeTrace` have
   no public inits, so external consumers cannot build `ResolvedValue`; `ResolvedValue`
   duplicates winner data with no invariant. **Decision:** add explicit `public init` to
   all three (project practice) and add `ResolvedValue.init(winner:losers:)` deriving
