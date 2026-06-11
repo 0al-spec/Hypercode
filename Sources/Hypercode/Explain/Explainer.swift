@@ -50,6 +50,10 @@ public struct Explainer {
         property: String?,
         into results: inout [NodeTrace]
     ) {
+        // The resolver preserves tree shape, so the two arrays are parallel by
+        // construction — fail fast in debug builds if a caller breaks that.
+        assert(commands.count == resolved.count,
+               "command/resolved tree shape mismatch (\(commands.count) vs \(resolved.count))")
         for (cmd, node) in zip(commands, resolved) {
             let context = NodeContext(node: cmd, ancestors: ancestors)
             let nodeLabel = nodeLabel(cmd)
