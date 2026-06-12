@@ -13,6 +13,7 @@ HCS="${2:-$REPO/Examples/service.hcs}"
 CTX="${CTX:-env=production}"
 
 IR="$(mktemp)"
+trap 'rm -f "$IR"' EXIT
 "$BIN" emit "$HC" --hcs "$HCS" --ctx "$CTX" --format json > "$IR"
 
 STALE="$(python3 check.py --hc "$HC" --hcs "$HCS" --ctx "$CTX" --list-stale || true)"
@@ -32,9 +33,12 @@ for MODULE in $STALE; do
     NODE_JSON="$(python3 - "$IR" "$NODE_PATH" <<'PY'
 import json, sys
 ir = json.load(open(sys.argv[1]))
+def label(n):  # selector identity, as in check.py
+    return n["type"] + ("." + n["class"] if "class" in n else "") \
+                     + ("#" + n["id"] if "id" in n else "")
 def find(nodes, path):
     for n in nodes:
-        p = path + "/" + n["type"]
+        p = path + "/" + label(n)
         if p == sys.argv[2]: return n
         if (r := find(n["children"], p)): return r
 find_result = find(ir["nodes"], "")

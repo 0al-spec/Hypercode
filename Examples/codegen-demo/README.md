@@ -29,8 +29,8 @@ CONFIG = {
 ```console
 $ python3 check.py
   FRESH  api_server.py    /Service/APIServer
-  FRESH  database.py      /Service/Database
-  FRESH  logger.py        /Service/Logger
+  FRESH  database.py      /Service/Database#main-db
+  FRESH  logger.py        /Service/Logger.console
   FRESH  service.py       /Service
 
 all modules fresh and contract-conformant
@@ -39,7 +39,10 @@ all modules fresh and contract-conformant
 `check.py` re-emits the IR and does two things: compares each module's
 embedded node hash against the current one (**freshness**), and validates the
 values embedded in the generated code against the `contracts[]` echoed in the
-IR (**conformance**). CI runs this on every push.
+IR (**conformance**): type and bounds for present keys, presence for required
+contracted keys, and no CONFIG key outside the resolved spec. Node paths use
+selector identity (`type[.class][#id]`) — the same addressing as
+`hypercode diff`. CI runs this on every push.
 
 ## 2. Scoped regeneration: a one-line spec edit
 
@@ -47,8 +50,8 @@ IR (**conformance**). CI runs this on every push.
 $ sed 's/port: 8080/port: 9090/' ../service.hcs > /tmp/edited.hcs
 $ python3 check.py --hcs /tmp/edited.hcs
   STALE  api_server.py    /Service/APIServer
-  FRESH  database.py      /Service/Database
-  FRESH  logger.py        /Service/Logger
+  FRESH  database.py      /Service/Database#main-db
+  FRESH  logger.py        /Service/Logger.console
   STALE  service.py       /Service
 
 2 module(s) stale — regenerate with generate.sh

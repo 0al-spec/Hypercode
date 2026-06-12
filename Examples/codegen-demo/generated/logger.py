@@ -1,6 +1,6 @@
 # GENERATED from the Hypercode resolved graph — do not edit by hand.
 # Regenerate with ../generate.sh when check.py reports this module stale.
-# node: /Service/Logger
+# node: /Service/Logger.console
 # hash: 67f124e133a8b12970f02c154195f4ea9b176e137360ed6e37dbd88645fa4289
 # context: env=production
 
