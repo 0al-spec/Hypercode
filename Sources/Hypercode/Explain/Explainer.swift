@@ -3,6 +3,12 @@ public struct PropertyTrace: Sendable {
     public let key: String
     public let winner: Match
     public let losers: [Match]
+
+    public init(key: String, winner: Match, losers: [Match]) {
+        self.key = key
+        self.winner = winner
+        self.losers = losers
+    }
 }
 
 /// All cascade traces for one node matched by the explain query.
@@ -11,6 +17,11 @@ public struct NodeTrace: Sendable {
     public let nodePath: String
     /// One trace per property (filtered to the queried property if provided).
     public let properties: [PropertyTrace]
+
+    public init(nodePath: String, properties: [PropertyTrace]) {
+        self.nodePath = nodePath
+        self.properties = properties
+    }
 }
 
 /// Walks a resolved tree to produce cascade traces for every node that matches
@@ -111,10 +122,15 @@ extension NodeTrace {
     private func renderMatch(_ m: Match, role: String) -> String {
         // "    WINNER   selector { value: X }"
         // "             file: f  line: N  specificity: (i,c,t)  order: N"
-        let prefix = "    " + role.padding(toLength: 7, withPad: " ", startingAt: 0) + "  "
+        // Hand-rolled padding: `padding(toLength:)` is Foundation/NSString API
+        // and the core target stays Foundation-free.
+        let paddedRole = role.count >= 7
+            ? String(role.prefix(7))
+            : role + String(repeating: " ", count: 7 - role.count)
+        let prefix = "    " + paddedRole + "  "
         let cont   = String(repeating: " ", count: prefix.count)
         let spec   = "(\(m.specificity.ids),\(m.specificity.classes),\(m.specificity.types))"
-        var line1 = prefix + "\(m.selector) { value: \(m.value.rawString) }\n"
+        let line1 = prefix + "\(m.selector) { value: \(m.value.rawString) }\n"
         var line2 = cont
         if let f = m.file { line2 += "file: \(f)  " }
         line2 += "line: \(m.line)  specificity: \(spec)  order: \(m.order)\n"

@@ -21,12 +21,16 @@ public struct Emitter {
         _ forest: [ResolvedNode],
         version: EmitVersion = .v2,
         context: ResolutionContext = [:],
+        commands: [Command] = [],
+        contracts: [SelectorContract] = [],
         as format: EmitFormat
     ) -> String {
         let root: IR
         switch version {
         case .v1: root = Emitter.intermediateV1(forest)
-        case .v2: root = Emitter.intermediateV2(forest, context: context)
+        case .v2: root = Emitter.intermediateV2(
+            forest, context: context, commands: commands, contracts: contracts
+        )
         }
         switch format {
         case .json: return Emitter.json(root, indent: 0) + "\n"
@@ -83,49 +87,100 @@ public struct Emitter {
 
     // MARK: v2
 
-    static func intermediateV2(_ forest: [ResolvedNode], context: ResolutionContext) -> IR {
-        let hashes = forest.map { nodeHash($0) }
-        let nodeIRs = forest.map { nodeV2($0) }
-        let docHash = documentHash(hashes)
+    static func intermediateV2(
+        _ forest: [ResolvedNode],
+        context: ResolutionContext,
+        commands: [Command] = [],
+        contracts: [SelectorContract] = []
+    ) -> IR {
+        let rendered = zip(forest, padded(commands, to: forest.count))
+            .map { node, cmd in nodeV2(node, command: cmd, ancestors: [], contracts: contracts) }
+        let docHash = documentHash(rendered.map(\.hash))
         return .object([
             ("version", .string("hypercode.ir/v2")),
             ("context", .object(context.keys.sorted().map { ($0, .string(context[$0]!)) })),
             ("resolver", .object([
                 ("name", .string("hypercode-swift")),
-                ("version", .string("0.5.0")),
+                ("version", .string(HypercodeVersion.current)),
             ])),
             ("documentHash", .string(docHash)),
-            ("nodes", .array(zip(nodeIRs, hashes).map { nodeIR, hash in
-                guard case var .object(pairs) = nodeIR else { return nodeIR }
-                let insertAt = pairs.firstIndex(where: { $0.0 == "properties" }) ?? pairs.endIndex
-                pairs.insert(("hash", .string(hash)), at: insertAt)
-                return .object(pairs)
-            })),
+            ("nodes", .array(rendered.map(\.ir))),
         ])
     }
 
-    private static func nodeV2(_ node: ResolvedNode) -> IR {
+    /// Aligns the optional command array with the resolved-node array so a
+    /// caller-side mismatch can never silently drop nodes from the output.
+    private static func padded(_ commands: [Command], to count: Int) -> [Command?] {
+        var result: [Command?] = commands.prefix(count).map(Optional.init)
+        while result.count < count { result.append(nil) }
+        return result
+    }
+
+    private static func nodeV2(
+        _ node: ResolvedNode,
+        command: Command?,
+        ancestors: [Command],
+        contracts: [SelectorContract]
+    ) -> (ir: IR, hash: String) {
+        let childCommands = command.map { $0.children } ?? []
+        let childAncestors = command.map { ancestors + [$0] } ?? ancestors
+        let children = zip(node.children, padded(childCommands, to: node.children.count))
+            .map { child, childCmd in
+                nodeV2(child, command: childCmd, ancestors: childAncestors, contracts: contracts)
+            }
+        let hash = stableHash(node, childHashes: children.map(\.hash))
+
+        // All contracts matching this node, narrowest last (ascending specificity,
+        // declaration order as the stable tie-breaker).
+        let nodeContracts: [SelectorContract] = command.map { cmd in
+            let ctx = NodeContext(node: cmd, ancestors: ancestors)
+            return contracts.enumerated()
+                .filter { _, sc in selectorSpec(sc.selector).isSatisfiedBy(ctx) }
+                .sorted { a, b in
+                    a.element.selector.specificity != b.element.selector.specificity
+                        ? a.element.selector.specificity < b.element.selector.specificity
+                        : a.offset < b.offset
+                }
+                .map(\.element)
+        } ?? []
+
         var fields: [(String, IR)] = [("type", .string(node.type))]
         if let className = node.className { fields.append(("class", .string(className))) }
         if let id = node.id { fields.append(("id", .string(id))) }
+        fields.append(("hash", .string(hash)))
 
         let properties = node.properties.keys.sorted().map { key -> (String, IR) in
             let rv = node.properties[key]!
+            let applicableContracts = nodeContracts.compactMap { sc -> IR? in
+                guard let pc = sc.properties[key] else { return nil }
+                return contractIR(pc, selector: sc.selector)
+            }
             let propFields: [(String, IR)] = [
                 ("value", typedValueIR(rv.value)),
                 ("winner", matchIR(rv.winner)),
                 ("losers", .array(rv.losers.map(matchIR))),
-                ("contracts", .array([])),
+                ("contracts", .array(applicableContracts)),
             ]
             return (key, .object(propFields))
         }
         fields.append(("properties", .object(properties)))
-        fields.append(("children", .array(node.children.map(self.nodeV2))))
-        return .object(fields)
+        fields.append(("children", .array(children.map(\.ir))))
+        return (.object(fields), hash)
+    }
+
+    private static func contractIR(_ pc: PropertyContract, selector: Selector) -> IR {
+        var pairs: [(String, IR)] = [
+            ("selector", .string(selector.description)),
+            ("type", .string(pc.type.rawValue)),
+            ("required", .bool(pc.required)),
+        ]
+        if let min = pc.min { pairs.append(("min", .double(min))) }
+        if let max = pc.max { pairs.append(("max", .double(max))) }
+        return .object(pairs)
     }
 
     private static func typedValueIR(_ v: TypedValue) -> IR {
-        switch v {
+        switch v.kind {
         case .string(let s): return .string(s)
         case .int(let i):    return .int(i)
         case .double(let d): return .double(d)
@@ -155,8 +210,7 @@ public struct Emitter {
     /// type, class?, id?, resolved property values (not provenance), and child hashes.
     /// Changing a winning value or the tree structure changes the hash;
     /// changing which rule won (with the same value) does not.
-    private static func nodeHash(_ node: ResolvedNode) -> String {
-        let childHashes = node.children.map { nodeHash($0) }
+    private static func stableHash(_ node: ResolvedNode, childHashes: [String]) -> String {
         let stableProps = node.properties.keys.sorted().map { key -> (String, IR) in
             (key, typedValueIR(node.properties[key]!.value))
         }
@@ -183,10 +237,16 @@ public struct Emitter {
         case let .int(number):
             return String(number)
         case let .double(number):
-            // Emit without trailing ".0" when it's a whole number.
-            return number.truncatingRemainder(dividingBy: 1) == 0
-                ? String(Int(number)) + ".0"
-                : String(number)
+            // Non-finite doubles cannot occur via the reader, but a library
+            // consumer can construct them — emit valid JSON, never trap.
+            guard number.isFinite else { return "null" }
+            // Whole numbers keep a ".0" marker; Int(exactly:) returns nil for
+            // magnitudes beyond Int.max instead of trapping like Int(_:).
+            if let whole = Int(exactly: number.rounded(.towardZero)),
+               number.truncatingRemainder(dividingBy: 1) == 0 {
+                return String(whole) + ".0"
+            }
+            return String(number)
         case let .bool(flag):
             return flag ? "true" : "false"
         case .null:
