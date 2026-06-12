@@ -38,7 +38,14 @@ public struct CascadeSheetReader {
     /// is an error. Rules keep the file they were defined in for provenance.
     ///
     /// - Parameters:
-    ///   - file: Optional path of the source file, stored in each `Rule` for provenance.
+    ///   - file: Optional path of the source file, stored in each `Rule` for
+    ///     provenance. **Must use the same canonical identity scheme the
+    ///     loader returns** — cycle detection and import-once dedupe compare
+    ///     these strings verbatim, so an absolute entry path combined with a
+    ///     loader that returns relative identities (or vice versa) lets the
+    ///     same physical sheet appear under two identities. The CLI
+    ///     normalizes both sides with one helper; library callers must do
+    ///     the same.
     ///   - imports: How `@import` directives are handled (default: error).
     public func read(
         _ source: String, file: String? = nil, imports: ImportHandling = .unsupported
