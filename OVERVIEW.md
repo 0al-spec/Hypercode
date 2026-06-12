@@ -121,8 +121,9 @@ runnable today: [`Examples/codegen-demo/`](Examples/codegen-demo/).
 
 Binding time is explicit: context resolves at build/generation time. Runtime
 feature flags (OpenFeature, LaunchDarkly) are a different, composable layer;
-an embedded runtime resolver is an optional mode, currently out of scope
-([RFC §9.8](RFC/Hypercode.md)).
+an embedded runtime resolver is decided out of scope — the resolver stays an
+embeddable pure function, but core makes no runtime API commitments
+([decision record](DOCS/RuntimeBoundary.md), [RFC §9.8](RFC/Hypercode.md)).
 
 ## 7. What Hypercode Is Not
 
