@@ -33,15 +33,15 @@ final class WhiteLabelTests: XCTestCase {
         let acme = try resolve(client: "acme")
         let globex = try resolve(client: "globex")
 
-        XCTAssertEqual(find("Logo", in: acme)?.properties["asset"]?.value, "logos/acme.svg")
-        XCTAssertEqual(find("Logo", in: globex)?.properties["asset"]?.value, "logos/globex.svg")
-        XCTAssertEqual(find("Api", in: acme)?.properties["base_url"]?.value, "https://api.acme.example")
-        XCTAssertEqual(find("Api", in: globex)?.properties["base_url"]?.value, "https://api.globex.example")
+        XCTAssertEqual(find("Logo", in: acme)?.properties["asset"]?.value, .string("logos/acme.svg"))
+        XCTAssertEqual(find("Logo", in: globex)?.properties["asset"]?.value, .string("logos/globex.svg"))
+        XCTAssertEqual(find("Api", in: acme)?.properties["base_url"]?.value, .string("https://api.acme.example"))
+        XCTAssertEqual(find("Api", in: globex)?.properties["base_url"]?.value, .string("https://api.globex.example"))
     }
 
     func testDefaultsWhenNoClient() throws {
         let base = try resolve(client: nil)
-        XCTAssertEqual(find("Logo", in: base)?.properties["asset"]?.value, "logos/default.svg")
-        XCTAssertEqual(find("Api", in: base)?.properties["base_url"]?.value, "https://api.default.example")
+        XCTAssertEqual(find("Logo", in: base)?.properties["asset"]?.value, .string("logos/default.svg"))
+        XCTAssertEqual(find("Api", in: base)?.properties["base_url"]?.value, .string("https://api.default.example"))
     }
 }

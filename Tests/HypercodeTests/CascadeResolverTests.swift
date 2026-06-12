@@ -55,34 +55,34 @@ final class CascadeResolverTests: XCTestCase {
         let tree = try resolve()
 
         let logger = try XCTUnwrap(find("Logger", in: tree))
-        XCTAssertEqual(logger.properties["level"]?.value, "debug")   // Logger type
-        XCTAssertEqual(logger.properties["format"]?.value, "text")   // .console class
+        XCTAssertEqual(logger.properties["level"]?.value, .string("debug"))   // Logger type
+        XCTAssertEqual(logger.properties["format"]?.value, .string("text"))   // .console class
 
         let database = try XCTUnwrap(find("Database", in: tree))
-        XCTAssertEqual(database.properties["driver"]?.value, "sqlite")
-        XCTAssertEqual(database.properties["file"]?.value, "dev.sqlite3")
+        XCTAssertEqual(database.properties["driver"]?.value, .string("sqlite"))
+        XCTAssertEqual(database.properties["file"]?.value, .string("dev.sqlite3"))
         XCTAssertNil(database.properties["pool_size"])               // production-only
 
         let listen = try XCTUnwrap(find("Listen", in: tree))
-        XCTAssertEqual(listen.properties["host"]?.value, "127.0.0.1")
-        XCTAssertEqual(listen.properties["port"]?.value, "5000")
+        XCTAssertEqual(listen.properties["host"]?.value, .string("127.0.0.1"))
+        XCTAssertEqual(listen.properties["port"]?.value, .int(5000))
     }
 
     func testProductionResolution() throws {
         let tree = try resolve(env: "production")
 
         let logger = try XCTUnwrap(find("Logger", in: tree))
-        XCTAssertEqual(logger.properties["level"]?.value, "info")    // later source order wins
-        XCTAssertEqual(logger.properties["format"]?.value, "json")
+        XCTAssertEqual(logger.properties["level"]?.value, .string("info"))    // later source order wins
+        XCTAssertEqual(logger.properties["format"]?.value, .string("json"))
 
         let database = try XCTUnwrap(find("Database", in: tree))
-        XCTAssertEqual(database.properties["driver"]?.value, "postgres") // #id beats type
-        XCTAssertEqual(database.properties["pool_size"]?.value, "50")
-        XCTAssertEqual(database.properties["file"]?.value, "dev.sqlite3") // not overridden
+        XCTAssertEqual(database.properties["driver"]?.value, .string("postgres")) // #id beats type
+        XCTAssertEqual(database.properties["pool_size"]?.value, .int(50))
+        XCTAssertEqual(database.properties["file"]?.value, .string("dev.sqlite3")) // not overridden
 
         let listen = try XCTUnwrap(find("Listen", in: tree))
-        XCTAssertEqual(listen.properties["host"]?.value, "0.0.0.0")
-        XCTAssertEqual(listen.properties["port"]?.value, "8080")
+        XCTAssertEqual(listen.properties["host"]?.value, .string("0.0.0.0"))
+        XCTAssertEqual(listen.properties["port"]?.value, .int(8080))
     }
 
     func testProvenanceTracksWinningSelector() throws {
@@ -91,5 +91,17 @@ final class CascadeResolverTests: XCTestCase {
 
         let prod = try XCTUnwrap(find("Database", in: try resolve(env: "production")))
         XCTAssertEqual(prod.properties["driver"]?.provenance.selector, .id("main-db"))
+    }
+
+    func testLosersAreRetained() throws {
+        // In production, driver: "postgres" (#main-db, specificity (1,0,0)) beats
+        // driver: "sqlite" (Database, specificity (0,0,1)). The loser must be retained.
+        let prod = try XCTUnwrap(find("Database", in: try resolve(env: "production")))
+        let driverResolved = try XCTUnwrap(prod.properties["driver"])
+        XCTAssertEqual(driverResolved.winner.value, .string("postgres"))
+        XCTAssertEqual(driverResolved.winner.selector, .id("main-db"))
+        XCTAssertEqual(driverResolved.losers.count, 1)
+        XCTAssertEqual(driverResolved.losers[0].value, .string("sqlite"))
+        XCTAssertEqual(driverResolved.losers[0].selector, .type("Database"))
     }
 }

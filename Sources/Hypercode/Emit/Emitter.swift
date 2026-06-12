@@ -42,7 +42,7 @@ public struct Emitter {
         let properties = node.properties.keys.sorted().map { key -> (String, IR) in
             let resolved = node.properties[key]!
             return (key, .object([
-                ("value", .string(resolved.value)),
+                ("value", .string(resolved.value.rawString)),
                 ("from", .string(resolved.provenance.selector.description)),
                 ("line", .int(resolved.provenance.line)),
             ]))

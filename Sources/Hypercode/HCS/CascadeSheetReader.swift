@@ -13,7 +13,9 @@ public struct HCSError: Error, Equatable, CustomStringConvertible, Sendable {
 public struct CascadeSheetReader {
     public init() {}
 
-    public func read(_ source: String) throws -> CascadeSheet {
+    /// Parse a `.hcs` source string into a `CascadeSheet`.
+    /// - Parameter file: Optional path of the source file, stored in each `Rule` for provenance.
+    public func read(_ source: String, file: String? = nil) throws -> CascadeSheet {
         let lines: [RawLine] = source
             .split(separator: "\n", omittingEmptySubsequences: false)
             .enumerated()
@@ -32,7 +34,7 @@ public struct CascadeSheetReader {
         var rules: [Rule] = []
         var order = 0
         for node in outline {
-            try interpretTopLevel(node, into: &rules, order: &order)
+            try interpretTopLevel(node, file: file, into: &rules, order: &order)
         }
         return CascadeSheet(rules: rules)
     }
@@ -59,7 +61,7 @@ public struct CascadeSheetReader {
 
     // MARK: - Interpretation
 
-    private func interpretTopLevel(_ node: Outline, into rules: inout [Rule], order: inout Int) throws {
+    private func interpretTopLevel(_ node: Outline, file: String?, into rules: inout [Rule], order: inout Int) throws {
         let content = String(node.line.trimmed)
         if content.hasPrefix("@") {
             guard let split = splitFirstColon(content), split.right.isEmpty else {
@@ -67,16 +69,17 @@ public struct CascadeSheetReader {
             }
             let condition = try parseGuard(String(split.left), line: node.line.number)
             for child in node.children {
-                try interpretRule(child, condition: condition, into: &rules, order: &order)
+                try interpretRule(child, condition: condition, file: file, into: &rules, order: &order)
             }
         } else {
-            try interpretRule(node, condition: nil, into: &rules, order: &order)
+            try interpretRule(node, condition: nil, file: file, into: &rules, order: &order)
         }
     }
 
     private func interpretRule(
         _ node: Outline,
         condition: ContextGuard?,
+        file: String?,
         into rules: inout [Rule],
         order: inout Int
     ) throws {
@@ -86,17 +89,20 @@ public struct CascadeSheetReader {
         }
         let selector = try parseSelector(String(split.left), line: node.line.number)
 
-        var properties: [String: String] = [:]
+        var properties: [String: TypedValue] = [:]
         for child in node.children {
             let property = try parseProperty(child)
             properties[property.key] = property.value
         }
 
-        rules.append(Rule(selector: selector, properties: properties, condition: condition, order: order, line: node.line.number))
+        rules.append(Rule(
+            selector: selector, properties: properties, condition: condition,
+            order: order, line: node.line.number, file: file
+        ))
         order += 1
     }
 
-    private func parseProperty(_ node: Outline) throws -> (key: String, value: String) {
+    private func parseProperty(_ node: Outline) throws -> (key: String, value: TypedValue) {
         guard node.children.isEmpty else {
             throw HCSError(message: "unexpected nested block under a property", line: node.line.number)
         }
@@ -108,7 +114,24 @@ public struct CascadeSheetReader {
         guard !key.isEmpty else {
             throw HCSError(message: "empty property key", line: node.line.number)
         }
-        return (key, unquote(split.right))
+        // Quoting forces string: `zip: "00123"` and `flag: "false"` must stay
+        // strings. Type inference runs only on unquoted scalars.
+        if isQuoted(split.right) {
+            return (key, .string(unquote(split.right)))
+        }
+        return (key, inferType(String(split.right)))
+    }
+
+    private func inferType(_ s: String) -> TypedValue {
+        if s == "true" { return .bool(true) }
+        if s == "false" { return .bool(false) }
+        if let i = Int(s) { return .int(i) }
+        if let d = Double(s), !s.contains(where: { $0.isLetter }) { return .double(d) }
+        return .string(s)
+    }
+
+    private func isQuoted(_ s: Substring) -> Bool {
+        s.count >= 2 && ((s.first == "\"" && s.last == "\"") || (s.first == "'" && s.last == "'"))
     }
 
     // MARK: - Selectors & guards
