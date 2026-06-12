@@ -135,4 +135,17 @@ final class EmitterTests: XCTestCase {
         let jsonA2 = try emit(hcsA)
         XCTAssertEqual(jsonA, jsonA2, "repeated emit of same input must produce identical output")
     }
+
+    func testV2JSONEscapesObjectKeys() throws {
+        // The CLI gates --ctx keys to identifiers, but a library consumer can
+        // pass any string — keys must be escaped exactly like string values.
+        let forest = try Parser(source: "App\n").parse()
+        let resolved = Resolver(sheet: CascadeSheet(rules: [])).resolve(forest)
+        let json = Emitter().emit(
+            resolved, version: .v2, context: ["bad\"key\\name": "x\"y"], as: .json
+        )
+        XCTAssertTrue(json.contains(#""bad\"key\\name": "x\"y""#),
+                      "context key and value must be JSON-escaped:\n\(json)")
+        XCTAssertFalse(json.contains("bad\"key"), "raw quote must not survive in a key")
+    }
 }
