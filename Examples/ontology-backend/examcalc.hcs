@@ -1,0 +1,223 @@
+# HC-121 dogfooding: the real `examcalc` DomainOntologyPackage (Ontology repo)
+# as a cascade sheet. Selector defaults carry what the YAML repeats per entry;
+# id rules carry only what is specific. Lists are comma-joined strings — core
+# has no list values (see DOCS/Dogfooding.md, friction F1).
+
+# ---- defaults by kind: the cascade earning its keep ----
+
+.entity:
+  extends: "sg:DomainEntity"
+
+.capability:
+  extends: "sg:Capability"
+
+.command:
+  extends: "sg:Command"
+
+.event:
+  extends: "sg:Event"
+
+Relation:
+  card_min: 0
+  card_max: "*"
+
+Policy:
+  extends: "sg:Policy"
+  enforceability: "runtime"
+
+# ---- package metadata ----
+
+Metadata:
+  package_id: "edu.university.examcalc"
+  namespace: "examcalc"
+  version: "0.1.0"
+  publisher: "OntologyService"
+  source: "SPECS/raw/Агентная_Операционная_Система_-_Branch_SpecGraph_-_Онтологии.json"
+  approval_status: "draft"
+
+@stage[approved]:
+  Metadata:
+    approval_status: "approved"
+
+'#specgraph-foundation':
+  import_id: "specgraph.foundation"
+  namespace: "sg"
+  version: "0.1.0"
+
+# ---- classes: only the specifics ----
+
+'#Exam':
+  implements: "sg:Auditable"
+  description: "University exam that requires a controlled calculator policy."
+
+'#title':
+  type: "string"
+  required: true
+  description: "Human-readable exam title."
+
+'#durationMinutes':
+  type: "integer"
+  required: false
+  description: "Planned exam duration in minutes."
+
+'#ExamSession':
+  implements: "sg:TimeBound"
+  description: "Time-bounded sitting of an exam."
+
+'#TabletDevice':
+  implements: "sg:DeviceBound, sg:Auditable"
+  description: "Managed tablet used during an exam."
+
+'#CalculatorFunction':
+  implements: "sg:RestrictableCapability"
+  description: "Calculator capability that can be allowed or denied by an exam policy."
+
+'#FunctionSet':
+  description: "Named collection of calculator functions."
+
+'#ExamPolicyProfile':
+  implements: "sg:Versioned, sg:Approvable, sg:Signable, sg:Auditable, sg:TimeBound"
+  description: "Signed and approved policy that governs allowed calculator behavior for an exam."
+  central: true
+
+'#ExamModeSession':
+  implements: "sg:Auditable, sg:DeviceBound"
+  lifecycle: "ExamModeSessionState"
+  description: "Runtime enforcement session for controlled calculator use."
+
+'#PolicyViolation':
+  implements: "sg:Auditable"
+  description: "Attempted or detected violation of the active exam calculator policy."
+
+'#AuditLogEntry':
+  implements: "sg:Auditable"
+  description: "Durable audit record for policy enforcement and review."
+
+'#StartExamMode':
+  description: "Request to start exam mode for a tablet and selected exam policy."
+
+'#VerifyDeviceAndPolicy':
+  description: "Request to verify that the active policy is signed and available on the target device."
+
+'#LockCalculator':
+  description: "Request to lock calculator access after a detected policy violation."
+
+'#EndExamMode':
+  description: "Request to complete an active exam mode session."
+
+# ---- relations: defaults cover 0..*; only 1..1 pairs override ----
+
+'#requires_policy':
+  domain: "Exam"
+  range: "ExamPolicyProfile"
+  card_min: 1
+  card_max: 1
+  description: "Every exam requires exactly one active policy profile."
+
+'#has_session':
+  domain: "Exam"
+  range: "ExamSession"
+
+'#allows':
+  domain: "ExamPolicyProfile"
+  range: "CalculatorFunction"
+
+'#denies':
+  domain: "ExamPolicyProfile"
+  range: "CalculatorFunction"
+
+'#includes_function':
+  domain: "FunctionSet"
+  range: "CalculatorFunction"
+
+'#enforces':
+  domain: "ExamModeSession"
+  range: "ExamPolicyProfile"
+  card_min: 1
+  card_max: 1
+
+'#occurred_during':
+  domain: "PolicyViolation"
+  range: "ExamModeSession"
+  card_min: 1
+  card_max: 1
+
+'#records':
+  domain: "AuditLogEntry"
+  range: "PolicyViolation, ExamModeSession"
+
+# ---- policies ----
+
+'#DenyByDefaultPolicy':
+  applies_to: "ExamPolicyProfile"
+  text: "Any calculator function not explicitly allowed by the active policy must be denied."
+
+'#PolicyMustBeSigned':
+  applies_to: "ExamPolicyProfile"
+  text: "Exam policy profile must be signed before activation."
+
+'#PolicyMustBeDeviceVerifiable':
+  applies_to: "ExamModeSession"
+  text: "Exam mode session must verify the active policy on the device before entering active state."
+
+'#NoNetworkDuringExam':
+  applies_to: "ExamModeSession"
+  text: "Calculator app must not access network during exam mode unless explicitly allowed."
+
+# ---- state machine ----
+
+'#ExamModeSessionState':
+  states: "not_started, pending_device_verification, active, violation_detected, locked, completed, failed"
+
+'#start':
+  from: "not_started"
+  to: "pending_device_verification"
+  command: "StartExamMode"
+
+'#verify':
+  from: "pending_device_verification"
+  to: "active"
+  command: "VerifyDeviceAndPolicy"
+
+'#violation':
+  from: "active"
+  to: "violation_detected"
+  event: "PolicyViolation"
+
+'#lock':
+  from: "violation_detected"
+  to: "locked"
+  command: "LockCalculator"
+
+'#complete':
+  from: "active"
+  to: "completed"
+  command: "EndExamMode"
+
+# ---- compatibility policy ----
+
+Compatibility:
+  patch_allowed: "add description, add alias, add non-breaking metadata"
+  minor_allowed: "add class, add relation, add optional property, add protocol"
+  major_requires: "remove class, remove relation, change relation domain, change relation range, make optional field required, change meaning of central concept"
+
+# ---- invariants ----
+
+@contract:
+  Metadata:
+    package_id: string
+    version: string
+    approval_status: string
+  Relation:
+    domain: string
+    range: string
+    card_min: int >= 0
+  Field:
+    type: string
+    required: bool
+  Policy:
+    enforceability: string
+    text: string
+  Transition:
+    from: string
+    to: string

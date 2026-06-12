@@ -36,3 +36,8 @@ jobs:
 
       - name: Kustomize comparison — metrics + all tenant×env targets validate
         run: python3 Examples/kustomize-comparison/metrics.py --check
+
+      - name: Ontology backend — regenerated package matches the original
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 Examples/ontology-backend/backend.py --check
