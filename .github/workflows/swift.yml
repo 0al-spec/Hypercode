@@ -38,6 +38,9 @@ jobs:
         run: python3 Examples/kustomize-comparison/metrics.py --check
 
       - name: Ontology backend — regenerated package matches the original
+        # macos-latest system Python is Homebrew-managed (PEP 668) — pip
+        # refuses to install into it; a throwaway venv sidesteps that.
         run: |
-          python3 -m pip install --quiet pyyaml
-          python3 Examples/ontology-backend/backend.py --check
+          python3 -m venv /tmp/ontology-venv
+          /tmp/ontology-venv/bin/pip install --quiet pyyaml
+          /tmp/ontology-venv/bin/python Examples/ontology-backend/backend.py --check
