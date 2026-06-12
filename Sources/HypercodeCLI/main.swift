@@ -49,24 +49,31 @@ func parseContextAssignment(_ pair: String) -> (key: String, value: String) {
 }
 
 /// Read a `.hcs` sheet with `@import` expansion: targets resolve relative to
-/// the importing sheet's directory; the standardized absolute path is the
-/// identity used for cycle detection and import-once dedupe.
+/// the importing sheet's directory; the canonical path is the identity used
+/// for cycle detection and import-once dedupe.
 struct SheetLoadError: Error, CustomStringConvertible { let description: String }
 
+/// One canonical spelling per physical sheet — standardized, and relative to
+/// the working directory when underneath it (readable provenance). The entry
+/// sheet goes through the same normalization as every import target, so an
+/// absolute entry path and a relative import of the same file can never get
+/// two identities (which would break cycle detection and dedupe).
+func canonicalSheetPath(_ url: URL) -> String {
+    let standardized = url.standardizedFileURL.path
+    let cwd = FileManager.default.currentDirectoryPath + "/"
+    return standardized.hasPrefix(cwd) ? String(standardized.dropFirst(cwd.count)) : standardized
+}
+
 func readSheet(_ path: String) throws -> CascadeSheet {
-    try CascadeSheetReader().read(readSource(path), file: path, imports: .loader { target, importingFile in
-        let baseDir = URL(fileURLWithPath: importingFile ?? path).deletingLastPathComponent()
+    let entry = canonicalSheetPath(URL(fileURLWithPath: path))
+    return try CascadeSheetReader().read(readSource(path), file: entry, imports: .loader { target, importingFile in
+        let baseDir = URL(fileURLWithPath: importingFile ?? entry).deletingLastPathComponent()
         let url = URL(fileURLWithPath: target, relativeTo: baseDir).standardizedFileURL
         guard let data = try? Data(contentsOf: url),
               let text = String(data: data, encoding: .utf8) else {
             throw SheetLoadError(description: "cannot read '\(url.path)'")
         }
-        // Keep provenance readable: paths under the working directory are
-        // reported relative to it (the canonical form stays consistent, so
-        // cycle detection and dedupe are unaffected).
-        let cwd = FileManager.default.currentDirectoryPath + "/"
-        let identity = url.path.hasPrefix(cwd) ? String(url.path.dropFirst(cwd.count)) : url.path
-        return (identity, text)
+        return (canonicalSheetPath(url), text)
     })
 }
 

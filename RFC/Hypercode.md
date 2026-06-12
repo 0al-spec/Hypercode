@@ -296,7 +296,7 @@ The strongest objection to Hypercode's design comes from the configuration-langu
 
    For example, given a base contract `Database: pool_size: int >= 1`, a more specific `Database#main: pool_size: int >= 10` is valid (narrowing), while `Database#main: pool_size: int >= 0` is rejected (weakening). Behavior cascades; safety does not. This asymmetry is the design's direct answer to the GCL lesson.
 
-   Two refinements make the rule precise (normative semantics in the [resolution specification](../EBNF/Hypercode_Resolution.md)). First, contracts **accumulate by intersection**: every contract matching a node governs it simultaneously, and an omitted bound is not a statement — it inherits through the intersection. Second, as in the CSS cascade, specificity relates two contracts only when at least one node in the document is matched by both selectors; contracts on disjoint parts of the tree are independent. Monotonicity violations are resolution errors (HC2101 type change, HC2102 interval widening, HC2103 required→optional); validating resolved *values* against the effective contract is the next layer (HC2104, in progress).
+   Two refinements make the rule precise (normative semantics in the [resolution specification](../EBNF/Hypercode_Resolution.md)). First, contracts **accumulate by intersection**: every contract matching a node governs it simultaneously, and an omitted bound is not a statement — it inherits through the intersection. Second, as in the CSS cascade, specificity relates two contracts only when at least one node in the document is matched by both selectors; contracts on disjoint parts of the tree are independent. Monotonicity violations are resolution errors (HC2101 type change, HC2102 interval widening, HC2103 required→optional); validating resolved *values* against the effective contract is the value layer (HC2104, `validate --ctx`, shipped in 0.5.0).
 4. **Known failure modes are acknowledged.** Specificity wars and selector escalation are real CSS pathologies at scale. Countermeasures — origin/layer control analogous to CSS `@layer`, dangling-selector validation (already in `hypercode validate`), and explain tooling — are sequenced in the [work plan](../workplan.md) ahead of language surface that would amplify them.
 
 ### 9.5. Why a Stable Topology
@@ -379,8 +379,8 @@ Prior art surveyed in §9:
 * §10 Open Questions brought up to date: debugging (HC-110), binding time
   (HC-114) and complexity management (HC-116) recorded as answered; the
   integrity chain and type-system depth remain open.
-* §9.8 no longer claims HC2104 is in progress — value-level enforcement
-  shipped in 0.5.0.
+* §9.4 and §9.8 no longer claim HC2104 is in progress — value-level
+  enforcement shipped in 0.5.0.
 
 **Version 0.2** (2026-06-11):
 
