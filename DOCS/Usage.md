@@ -198,8 +198,10 @@ specification, code is regenerated output.
 - Humans review the *specification diff*; machines expand it into code
   (review compression).
 
-The missing piece for this loop is `hypercode diff <old.ir> <new.ir>` —
-HC-113 in the [work plan](../workplan.md).
+This loop is runnable today: [`Examples/codegen-demo/`](../Examples/codegen-demo/)
+generates a module per node, verifies freshness by node hash and contract
+conformance of the generated values in CI. `hypercode diff` (HC-113 in the
+[work plan](../workplan.md)) will productize the hash comparison.
 
 ## Scalar typing cheat-sheet
 

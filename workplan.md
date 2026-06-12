@@ -107,7 +107,7 @@ P1 — built on v2:
 - ⬜ HC-121 Dogfooding as the primary adoption path — Hyperprompt / Ontology consume the resolved IR (consumer-side dialects & backends per `DOCS/Dialects.md` / `DOCS/Backends.md`)
 - 🅿️ HC-122 SLSA-like generation attestation chain — signed `.hc`/`.hcs` → IR hash → generator identity/version → artifact hashes → validator report (RFC §8, §9.8)
 - 🅿️ HC-123 Agent Passport / 0AL integration — attestation chain plugs into 0AL's signed-agent model
-- ⬜ HC-124 End-to-end AI codegen demo — one `.hc`/`.hcs` service spec → IR v2 → LLM generates code per node → generated artifacts validated against the same contracts; node hashes scope regeneration after a spec edit; the "review compression" story (RFC §9.7) made runnable
+- [x] HC-124 End-to-end AI codegen demo — `Examples/codegen-demo/`: service spec → IR v2 → Claude-generated module per node (embedded node hash + provenance comments) → `check.py` validates artifacts against the same contracts (HC2104-gen) and scopes regeneration by node hash; `generate.sh` regenerates stale modules via `claude -p`; checked in CI on every push
 
 ## Cross-cutting
 - [x] HC-090 Swift CI workflow (build + test) — `.github/workflows/swift.yml`

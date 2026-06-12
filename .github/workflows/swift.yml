@@ -23,3 +23,6 @@ jobs:
           .build/debug/hypercode emit Examples/service.hc --hcs Examples/service.hcs --ctx env=production --format json > /tmp/ir-prod.json
       - name: Validate IR v2 against schema
         run: npm exec --yes --package=ajv-cli@5 -- ajv validate --spec=draft2020 -s Schema/hypercode-ir-v2.schema.json -d /tmp/ir-dev.json -d /tmp/ir-prod.json
+
+      - name: Codegen demo — generated artifacts fresh & contract-conformant
+        run: python3 Examples/codegen-demo/check.py
