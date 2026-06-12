@@ -35,10 +35,11 @@ def tree_files(root, suffixes):
 
 def meaningful_lines(path):
     lines = []
-    for raw in open(path):
-        line = raw.strip()
-        if line and not line.startswith("#"):
-            lines.append(line)
+    with open(path, encoding="utf-8") as handle:
+        for raw in handle:
+            line = raw.strip()
+            if line and not line.startswith("#"):
+                lines.append(line)
     return lines
 
 
