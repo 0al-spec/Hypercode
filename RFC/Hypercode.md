@@ -317,15 +317,31 @@ Spec-driven development is converging on the view that the specification is the 
 
 ### 9.8. Acknowledged Limits
 
-* **Context binds at resolve time.** `--ctx` is supplied when resolving: Hypercode's default mode decides context at build/generation time. Runtime feature-flag systems (OpenFeature, LaunchDarkly) decide flag values per request at runtime — a different layer that composes with Hypercode rather than competing with it. Serving dynamic context from a single deployment (e.g., many tenants per process) would require embedding the resolver as a runtime library; that optional mode raises its own caching, latency, and provenance questions and is currently out of scope.
+* **Context binds at resolve time.** `--ctx` is supplied when resolving: Hypercode's default mode decides context at build/generation time. Runtime feature-flag systems (OpenFeature, LaunchDarkly) decide flag values per request at runtime — a different layer that composes with Hypercode rather than competing with it. Serving dynamic context from a single deployment (e.g., many tenants per process) would require embedding the resolver as a runtime library; that mode raises its own caching, latency, and provenance questions and is **decided out of scope** for the reference implementation (HC-114, decision record with revisit conditions: [`DOCS/RuntimeBoundary.md`](../DOCS/RuntimeBoundary.md)). The resolver remains an embeddable pure function of `(sheet, context)`, but core makes no runtime API commitments — no caching, no sheet hot-reload, no per-request provenance sink.
 * **No integrity chain yet.** As noted in §8, nothing verifies the chain end-to-end: signed `.hc`/`.hcs` → resolved-IR hash → generator identity and version → generated-artifact hashes → validator report. SLSA provides the reference vocabulary for such attestations. For the review-compression story to carry governance weight they are eventually required; they are deliberately deferred as future work.
-* **Type-system maturity.** IR v2 carries typed values (string/int/double/bool, inferred at parse time with the source lexeme preserved), and the contract layer (§9.4) ships declarations and monotonicity validation. Enforcement of resolved values against the effective contract (HC2104) is in progress; until it lands, Hypercode still does not compete with typed configuration languages on safety. IR v1 remains strings-only and is kept for backward compatibility.
+* **Type-system maturity.** IR v2 carries typed values (string/int/double/bool, inferred at parse time with the source lexeme preserved), and the contract layer (§9.4) ships declarations and monotonicity validation. Resolved values are enforced against the effective contract per context (HC2104, `validate --ctx`). What is still missing versus typed configuration languages: richer value types (lists, maps, durations), cross-property constraints, and user-defined predicates. IR v1 remains strings-only and is kept for backward compatibility.
 
 ## 10. Open Questions
 
-*  **Debugging and Tooling:** How can developers effectively trace why a specific configuration was applied? This would require specialized debugging tools that can visualize the cascade and resolution of HCS rules.
-*  **Performance:** The overhead of parsing and resolving the HCS at startup needs to be analyzed. A JIT (Just-In-Time) resolution or an AOT (Ahead-Of-Time) compilation step might be necessary for performance-critical applications.
-*  **Complexity Management:** While HCS simplifies the core logic, very large and complex HCS files could become difficult to manage themselves. Best practices and modularization strategies would be required. This could include extending the at-rule system with directives like `@import`, allowing for better organization of large configurations.
+The original open questions of draft 0.1 have since been answered:
+
+*  **Debugging and Tooling** — answered by `hypercode explain` (HC-110): the
+   full cascade trace, winner and losing rules with file, line, specificity
+   and source order (§9.4).
+*  **Performance / binding time** — closed by decision HC-114: resolution is
+   ahead-of-time (build/generation time) by design; an embedded runtime
+   resolver is out of scope
+   ([`DOCS/RuntimeBoundary.md`](../DOCS/RuntimeBoundary.md), §9.8).
+*  **Complexity Management** — answered by `@import` (HC-116, §4.2.4): sheets
+   compose with deterministic order, import-once semantics and cross-file
+   provenance.
+
+Genuinely open:
+
+*  **Integrity chain** (§8, §9.8): signed sources → resolved-IR hash →
+   generator identity → artifact hashes → validator report (SLSA vocabulary).
+*  **Type-system depth** (§9.8): richer value types, cross-property
+   constraints, user-defined predicates.
 
 ## 11. References
 
@@ -356,6 +372,15 @@ Prior art surveyed in §9:
   the directive position, importer wins specificity ties, import-once,
   cycle detection, cross-file provenance. Normative semantics in
   `EBNF/Hypercode_Resolution.md` §5.1.
+* Runtime resolver boundary decided (HC-114, §9.8): build/generation-time
+  resolution is the only supported mode; the embedded runtime resolver is out
+  of scope with explicit revisit conditions (`DOCS/RuntimeBoundary.md`);
+  HC-115 (OpenFeature bridge) parked accordingly.
+* §10 Open Questions brought up to date: debugging (HC-110), binding time
+  (HC-114) and complexity management (HC-116) recorded as answered; the
+  integrity chain and type-system depth remain open.
+* §9.8 no longer claims HC2104 is in progress — value-level enforcement
+  shipped in 0.5.0.
 
 **Version 0.2** (2026-06-11):
 

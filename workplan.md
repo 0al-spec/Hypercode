@@ -97,8 +97,8 @@ P0 — what makes the novelty claim defensible:
 
 P1 — built on v2:
 - [x] HC-113 `hypercode diff <old.ir> <new.ir>` — affected nodes/properties with reasons (old/new winner rule), node-hash short-circuit (unchanged subtrees skipped), selector-identity node matching, added/removed/reordered detection, `--format json` = `hypercode.diff/v1` feed, exit 1 on change — `Sources/Hypercode/Diff/` (Foundation-free JSON parser with exact number lexemes)
-- ⬜ HC-114 Runtime resolver boundary — document default build/generation-time mode vs. optional embedded runtime resolver (per-request context: caching, latency, provenance); decide library API or explicit out-of-scope — RFC §9.8
-- 🅿️ HC-115 OpenFeature bridge for the runtime mode *(only if HC-114 decides "in scope")*
+- [x] HC-114 Runtime resolver boundary — **decided: build/generation-time only**, embedded runtime resolver out of scope with revisit conditions; resolver stays an embeddable pure function with no runtime API commitments — `DOCS/RuntimeBoundary.md`, RFC §9.8/§10
+- 🅿️ HC-115 OpenFeature bridge for the runtime mode — parked by the HC-114 decision (runtime mode out of scope); runtime flags compose by targeting resolved anchors instead
 - [x] HC-116 `@import` for `.hcs` — sheet modularity: depth-first expansion at the directive position (importer wins ties), import-once for diamonds, cycle detection, cross-file provenance; contracts compose across imports — normative semantics `EBNF/Hypercode_Resolution.md` §5.1
 
 ## M9 — Validation & adoption (DOCS/Positioning.md)
