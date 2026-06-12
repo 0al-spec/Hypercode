@@ -134,6 +134,13 @@ public struct CascadeSheetReader {
         s.count >= 2 && ((s.first == "\"" && s.last == "\"") || (s.first == "'" && s.last == "'"))
     }
 
+    // MARK: - Public selector parsing (used by `hypercode explain`)
+
+    /// Parse a CSS-like selector string from user input (e.g. `service > database`).
+    public func parseSelector(fromString text: String) throws -> Selector {
+        try parseSelector(text, line: 1)
+    }
+
     // MARK: - Selectors & guards
 
     private func parseGuard(_ text: String, line: Int) throws -> ContextGuard {
