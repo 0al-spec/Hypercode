@@ -99,6 +99,7 @@ P1 — built on v2:
 - ⬜ HC-113 `hypercode diff <old.ir> <new.ir>` — affected nodes/properties with reasons (which rule changed), node-hash based; the invalidation signal for incremental (re)generation
 - ⬜ HC-114 Runtime resolver boundary — document default build/generation-time mode vs. optional embedded runtime resolver (per-request context: caching, latency, provenance); decide library API or explicit out-of-scope — RFC §9.8
 - 🅿️ HC-115 OpenFeature bridge for the runtime mode *(only if HC-114 decides "in scope")*
+- ⬜ HC-116 `@import` for `.hcs` — sheet modularity; real configurations don't live in one file (resolution order, cycle detection, provenance keeps the importing file)
 
 ## M9 — Validation & adoption (DOCS/Positioning.md)
 
@@ -106,8 +107,10 @@ P1 — built on v2:
 - ⬜ HC-121 Dogfooding as the primary adoption path — Hyperprompt / Ontology consume the resolved IR (consumer-side dialects & backends per `DOCS/Dialects.md` / `DOCS/Backends.md`)
 - 🅿️ HC-122 SLSA-like generation attestation chain — signed `.hc`/`.hcs` → IR hash → generator identity/version → artifact hashes → validator report (RFC §8, §9.8)
 - 🅿️ HC-123 Agent Passport / 0AL integration — attestation chain plugs into 0AL's signed-agent model
+- ⬜ HC-124 End-to-end AI codegen demo — one `.hc`/`.hcs` service spec → IR v2 → LLM generates code per node → generated artifacts validated against the same contracts; node hashes scope regeneration after a spec edit; the "review compression" story (RFC §9.7) made runnable
 
 ## Cross-cutting
 - [x] HC-090 Swift CI workflow (build + test) — `.github/workflows/swift.yml`
 - [x] HC-091 Repo layout documented (root Swift package) — `DOCS/Architecture.md`
+- [x] HC-092 Usage guide with real CLI outputs (contexts, contracts as a CI gate, `explain`, IR v2, AI-codegen pipeline) — `DOCS/Usage.md`; `Examples/service.hcs` gained a `@contract:` block so the reference fixture exercises HC-111 *(PR #23)*
 - [x] HC-092 ANTLR/Java relabeled as a conformance oracle — `DOCS/Architecture.md`
