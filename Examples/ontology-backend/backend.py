@@ -63,6 +63,13 @@ SECTIONS = ["Metadata", "Imports", "Classes", "Relations", "Policies",
             "StateMachines", "Compatibility"]
 
 
+def put(collection, key, value, kind):
+    """dict insert that refuses to silently overwrite a duplicate id."""
+    if key in collection:
+        sys.exit(f"malformed package: duplicate {kind} '{key}'")
+    collection[key] = value
+
+
 def build(ir):
     package = ir["nodes"][0]
     by_type = {}
@@ -109,13 +116,13 @@ def build(ir):
         fields = {}
         for field in children(cls, "Field"):
             fv = props(field)
-            fields[field["id"]] = {
+            put(fields, field["id"], {
                 "type": fv["type"], "required": fv["required"],
                 "description": fv["description"],
-            }
+            }, "field")
         if fields:
             entry["fields"] = fields
-        classes[cls["id"]] = entry
+        put(classes, cls["id"], entry, "class")
 
     relations = {}
     for rel in children(by_type["Relations"], "Relation"):
@@ -128,17 +135,17 @@ def build(ir):
         }
         if "description" in values:
             entry["description"] = values["description"]
-        relations[rel["id"]] = entry
+        put(relations, rel["id"], entry, "relation")
 
     policies = {}
     for pol in children(by_type["Policies"], "Policy"):
         values = props(pol)
-        policies[pol["id"]] = {
+        put(policies, pol["id"], {
             "extends": values["extends"],
             "enforceability": values["enforceability"],
             "appliesTo": csv(values["applies_to"]),
             "text": values["text"],
-        }
+        }, "policy")
 
     machines = {}
     for machine in children(by_type["StateMachines"], "Machine"):
@@ -152,8 +159,9 @@ def build(ir):
             if "event" in tv:
                 entry["event"] = tv["event"]
             transitions.append(entry)
-        machines[machine["id"]] = {"states": csv(values["states"]),
-                                   "transitions": transitions}
+        put(machines, machine["id"],
+            {"states": csv(values["states"]), "transitions": transitions},
+            "state machine")
 
     compat = props(by_type["Compatibility"])
     doc["spec"] = {
