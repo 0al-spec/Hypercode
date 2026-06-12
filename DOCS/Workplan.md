@@ -82,7 +82,7 @@ Cascade semantics are **unchanged** — only retention of losing matches is adde
 
 ### Package bump
 
-`Package.swift` version comment: `0.5.0-dev`.
+`Package.swift` version comment: `0.5.0-dev` *(historical — released as `0.5.0` in [#26](https://github.com/0al-spec/Hypercode/pull/26))*.
 
 ---
 
@@ -287,7 +287,7 @@ All findings reproduced against `feat/hc-111-contracts` (69a38f0). R1–R8 block
 - ✅ **R8 — undelivered plan items.** Root `workplan.md` M8: HC-110/111/112 still ⬜
   (mark only on merge); `RFC/Hypercode.md` not bumped (PR-4 promised v0.2; §Limitations
   "untyped strings in IR v1" needs a v2 note); IR `contracts[]` not sorted by ascending
-  specificity as specified; `Package.swift` `0.5.0-dev` version comment missing (PR-1);
+  specificity as specified; `Package.swift` `0.5.0-dev` version comment (the pre-release string) missing (PR-1);
   CI `ajv` schema-validation step missing (PR-2); EBNF v0.2: `<scalar>` wrongly requires
   quoted strings (bare `driver: sqlite` is valid), header `Date:` stale, and the HC21xx
   semantics table belongs in `Hypercode_Resolution.md`.

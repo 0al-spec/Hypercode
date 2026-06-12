@@ -91,9 +91,9 @@ cascade sheets (`.hcs`). Companion to the [RFC](RFC/Hypercode.md) and the
 ## M8 — Spec-layer hardening (RFC §9 follow-through)
 
 P0 — what makes the novelty claim defensible:
-- ⬜ HC-110 `hypercode explain <selector> [property] [--ctx …]` — full cascade trace: winner *and* losing rules with specificity/source-order; in review: [#21](https://github.com/0al-spec/Hypercode/pull/21) (stacked on #19/#20)
-- ⬜ HC-111 Monotonic selector contracts — property schemas attached via selectors; values cascade, contracts accumulate by intersection & narrow; weakening = resolution error (normative: RFC §9.4 + `EBNF/Hypercode_Resolution.md` §7); in review: [#22](https://github.com/0al-spec/Hypercode/pull/22); value enforcement (HC2104) follows as PR-5
-- ⬜ HC-112 `hypercode.ir/v2` (breaking) — typed values (v1 is strings-only), `file` alongside `line`, specificity + source order, losing rules, contract results, per-node and per-document hashes, context echo, resolver name/version — `Schema/`; in review: [#19](https://github.com/0al-spec/Hypercode/pull/19) + [#20](https://github.com/0al-spec/Hypercode/pull/20)
+- ✅ HC-110 `hypercode explain <selector> [property] [--ctx …]` — full cascade trace: winner *and* losing rules with specificity/source-order; shipped in 0.5.0: [#21](https://github.com/0al-spec/Hypercode/pull/21)
+- ✅ HC-111 Monotonic selector contracts — property schemas attached via selectors; values cascade, contracts accumulate by intersection & narrow; weakening = resolution error (normative: RFC §9.4 + `EBNF/Hypercode_Resolution.md` §7); shipped in 0.5.0: [#22](https://github.com/0al-spec/Hypercode/pull/22); value enforcement (HC2104): [#23](https://github.com/0al-spec/Hypercode/pull/23)
+- ✅ HC-112 `hypercode.ir/v2` (breaking) — typed values (v1 is strings-only), `file` alongside `line`, specificity + source order, losing rules, contract results, per-node and per-document hashes, context echo, resolver name/version — `Schema/`; shipped in 0.5.0: [#19](https://github.com/0al-spec/Hypercode/pull/19) + [#20](https://github.com/0al-spec/Hypercode/pull/20)
 
 P1 — built on v2:
 - [x] HC-113 `hypercode diff <old.ir> <new.ir>` — affected nodes/properties with reasons (old/new winner rule), node-hash short-circuit (unchanged subtrees skipped), selector-identity node matching, added/removed/reordered detection, `--format json` = `hypercode.diff/v1` feed, exit 1 on change — `Sources/Hypercode/Diff/` (Foundation-free JSON parser with exact number lexemes)

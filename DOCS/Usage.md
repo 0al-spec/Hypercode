@@ -144,7 +144,7 @@ $ hypercode emit Examples/service.hc --hcs Examples/service.hcs --ctx env=produc
 {
   "version": "hypercode.ir/v2",
   "context": { "env": "production" },          // echo of --ctx
-  "resolver": { "name": "hypercode-swift", "version": "0.5.0-dev" },
+  "resolver": { "name": "hypercode-swift", "version": "0.5.0" },
   "documentHash": "3be098179523f21c…",
   "nodes": [ /* … each node: */
     {
