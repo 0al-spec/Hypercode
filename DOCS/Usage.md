@@ -6,8 +6,8 @@ and [`Examples/service.hcs`](../Examples/service.hcs).
 
 ```
 .hc + .hcs + --ctx ──▶ resolve ──▶ validate (contracts) ──▶ emit (IR v2) ──▶ your generator
-                          │
-                       explain (why is this value X?)
+                          │                                      │
+                       explain (why is this value X?)         diff (what changed?)
 ```
 
 ## The running example
@@ -228,9 +228,10 @@ $ echo $?
   different rule winning the same value) is invisible — by design.
 - Nodes are matched by selector identity (`type[.class][#id]`); added,
   removed and reordered nodes are reported as such.
-- `--format json` emits `hypercode.diff/v1` — the machine-readable feed for
-  incremental regeneration (feed it to your generator instead of re-running
-  everything).
+- `--format json` emits `hypercode.diff/v1`
+  ([schema](../Schema/hypercode-diff-v1.schema.json), ajv-validated in CI) —
+  the machine-readable feed for incremental regeneration (feed it to your
+  generator instead of re-running everything).
 - Exit code is `diff`-like: `0` identical, `1` documents differ — usable as a
   CI gate ("spec changed → require regeneration").
 

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0al-spec.github.io/Hypercode/schema/hypercode-diff-v1.schema.json",
+  "title": "Hypercode diff v1",
+  "description": "Output of `hypercode diff --format json`: the affected-node set between two hypercode.ir/v2 documents, with reasons (old/new value and winning rule). The machine-readable invalidation feed for incremental regeneration (HC-113).",
+  "type": "object",
+  "required": ["version", "changes"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "hypercode.diff/v1"
+    },
+    "changes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/change" }
+    }
+  },
+  "$defs": {
+    "change": {
+      "type": "object",
+      "required": ["kind", "node"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["added", "removed", "modified", "reordered"]
+        },
+        "node": {
+          "type": "string",
+          "description": "Selector-identity path from the root, e.g. 'Service > APIServer > Listen'."
+        },
+        "properties": {
+          "type": "array",
+          "description": "Present for kind=modified: the property-level differences.",
+          "items": { "$ref": "#/$defs/propertyChange" }
+        }
+      }
+    },
+    "propertyChange": {
+      "type": "object",
+      "required": ["key", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string" },
+        "kind": { "type": "string", "enum": ["added", "removed", "changed"] },
+        "old": { "type": "string", "description": "Scalar text of the old value." },
+        "new": { "type": "string", "description": "Scalar text of the new value." },
+        "winner": {
+          "type": "string",
+          "description": "For kind=added: the rule that introduced the value ('selector @ file:line')."
+        },
+        "oldWinner": { "type": "string" },
+        "newWinner": { "type": "string" }
+      }
+    }
+  }
+}
