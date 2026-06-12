@@ -251,6 +251,8 @@ Hypercode and HCS are declarative and do not define runtime execution isolation 
 
 The specification assumes that the resolution and execution engine is trusted. No mechanisms are currently defined for verifying integrity of `.hcs` rules or controlling their provenance. Future versions may include digital signing or validation capabilities.
 
+`@import` (§4.2.4) widens the read surface: resolving a sheet now reads every transitively imported file. **The import loader is the policy boundary.** The reference CLI loader resolves any path the process can read — including absolute and `../` targets — which is appropriate for trusted local configuration. Embedding contexts that resolve untrusted sheets (agents, services) MUST supply a policy-bound loader (root-confined paths, allow-lists) instead; the `ImportHandling.loader` API exists precisely so that policy lives with the embedder.
+
 ## 9. Novelty and Prior Art
 
 ### 9.1. The Claim

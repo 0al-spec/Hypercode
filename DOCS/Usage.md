@@ -287,7 +287,10 @@ bad-tenant.hcs:3:1: error[HC2104]: contract violation for 'port': 99999 exceeds 
 
 Rules of the road: imports go first; paths resolve relative to the importing
 sheet; a sheet expands once per resolution (diamonds are fine); a cycle is an
-error naming the chain.
+error naming the chain. Trust model: the CLI loader reads any path the
+process can read (absolute and `../` included) — fine for local trusted
+config; embedders resolving untrusted sheets supply a policy-bound loader
+(RFC §8).
 
 ## Scalar typing cheat-sheet
 
