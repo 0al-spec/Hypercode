@@ -8,6 +8,7 @@ usage:
   hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
   hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml] [--ir-version 1|2]
   hypercode explain  <file.hc> --hcs <file.hcs> [--ctx key=value]... <selector> [property]
+  hypercode diff     <old.ir.json> <new.ir.json> [--format text|json]  # exit 1 when documents differ
   hypercode lsp                                                    # language server (LSP over stdio)
 
 global: [--diagnostics text|json]
@@ -260,6 +261,42 @@ func runExplain(_ args: [String]) throws {
     }
 }
 
+func runDiff(_ args: [String]) throws {
+    var paths: [String] = []
+    var format = "text"
+
+    var index = 0
+    while index < args.count {
+        switch args[index] {
+        case "--format":
+            index += 1
+            guard index < args.count, ["text", "json"].contains(args[index]) else {
+                fail("error: --format expects text|json")
+            }
+            format = args[index]
+        default:
+            paths.append(args[index])
+        }
+        index += 1
+    }
+    guard paths.count == 2 else {
+        fail("error: diff needs exactly two IR files: <old.ir.json> <new.ir.json>\n\n\(usage)", code: 64)
+    }
+
+    func document(_ path: String) throws -> IRDocument {
+        try IRDocument(json: JSONParser.parse(readSource(path)))
+    }
+    let old = try document(paths[0])
+    let new = try document(paths[1])
+
+    let changes = IRDiffer().diff(old: old, new: new)
+    switch format {
+    case "json": print(IRDiffer.renderJSON(changes), terminator: "")
+    default:     print(IRDiffer.renderText(changes), terminator: "")
+    }
+    if !changes.isEmpty { exit(1) }
+}
+
 // Pull the global `--diagnostics <format>` flag out of the argument list.
 let arguments: [String] = {
     let raw = Array(CommandLine.arguments.dropFirst())
@@ -296,6 +333,8 @@ do {
         try runEmit(Array(arguments.dropFirst()))
     case "explain":
         try runExplain(Array(arguments.dropFirst()))
+    case "diff":
+        try runDiff(Array(arguments.dropFirst()))
     case "lsp":
         LSPServer().run()
     case "parse":

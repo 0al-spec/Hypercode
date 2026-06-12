@@ -96,7 +96,7 @@ P0 — what makes the novelty claim defensible:
 - ⬜ HC-112 `hypercode.ir/v2` (breaking) — typed values (v1 is strings-only), `file` alongside `line`, specificity + source order, losing rules, contract results, per-node and per-document hashes, context echo, resolver name/version — `Schema/`; in review: [#19](https://github.com/0al-spec/Hypercode/pull/19) + [#20](https://github.com/0al-spec/Hypercode/pull/20)
 
 P1 — built on v2:
-- ⬜ HC-113 `hypercode diff <old.ir> <new.ir>` — affected nodes/properties with reasons (which rule changed), node-hash based; the invalidation signal for incremental (re)generation
+- [x] HC-113 `hypercode diff <old.ir> <new.ir>` — affected nodes/properties with reasons (old/new winner rule), node-hash short-circuit (unchanged subtrees skipped), selector-identity node matching, added/removed/reordered detection, `--format json` = `hypercode.diff/v1` feed, exit 1 on change — `Sources/Hypercode/Diff/` (Foundation-free JSON parser with exact number lexemes)
 - ⬜ HC-114 Runtime resolver boundary — document default build/generation-time mode vs. optional embedded runtime resolver (per-request context: caching, latency, provenance); decide library API or explicit out-of-scope — RFC §9.8
 - 🅿️ HC-115 OpenFeature bridge for the runtime mode *(only if HC-114 decides "in scope")*
 - ⬜ HC-116 `@import` for `.hcs` — sheet modularity; real configurations don't live in one file (resolution order, cycle detection, provenance keeps the importing file)

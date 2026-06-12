@@ -200,8 +200,39 @@ specification, code is regenerated output.
 
 This loop is runnable today: [`Examples/codegen-demo/`](../Examples/codegen-demo/)
 generates a module per node, verifies freshness by node hash and contract
-conformance of the generated values in CI. `hypercode diff` (HC-113 in the
-[work plan](../workplan.md)) will productize the hash comparison.
+conformance of the generated values in CI. `hypercode diff` (§6) is the
+productized form of that hash comparison.
+
+## 6. Semantic diff: `hypercode diff`
+
+The invalidation signal as a first-class command (HC-113). Emit two IRs,
+diff them — the output is the affected-node set with reasons:
+
+```console
+$ hypercode emit app.hc --hcs app.hcs --ctx env=production > old.ir.json
+$ sed 's/port: 8080/port: 9090/' app.hcs > edited.hcs
+$ hypercode emit app.hc --hcs edited.hcs --ctx env=production > new.ir.json
+$ hypercode diff old.ir.json new.ir.json
+~ Service > APIServer > Listen
+    ~ port: 8080 → 9090
+          was: APIServer > Listen @ app.hcs:26
+          now: APIServer > Listen @ edited.hcs:26
+
+1 affected node(s)
+$ echo $?
+1
+```
+
+- Hash-driven: unchanged subtrees are skipped wholesale, so cost is
+  proportional to the change, not the tree. A provenance-only change (a
+  different rule winning the same value) is invisible — by design.
+- Nodes are matched by selector identity (`type[.class][#id]`); added,
+  removed and reordered nodes are reported as such.
+- `--format json` emits `hypercode.diff/v1` — the machine-readable feed for
+  incremental regeneration (feed it to your generator instead of re-running
+  everything).
+- Exit code is `diff`-like: `0` identical, `1` documents differ — usable as a
+  CI gate ("spec changed → require regeneration").
 
 ## Scalar typing cheat-sheet
 

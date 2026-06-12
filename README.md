@@ -59,6 +59,7 @@ hypercode validate <file.hc> [--hcs <file.hcs>] [--ctx key=value]...   # incl. c
 hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
 hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml] [--ir-version 1|2]
 hypercode explain  <file.hc> --hcs <file.hcs> [--ctx key=value]... <selector> [property]
+hypercode diff     <old.ir.json> <new.ir.json> [--format text|json]    # affected nodes, exit 1 on change
 hypercode lsp                                                          # LSP over stdio
 ```
 
