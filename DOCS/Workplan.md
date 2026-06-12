@@ -10,7 +10,7 @@ Companion to [workplan.md](../workplan.md) M8 task stubs and [RFC §9](../RFC/Hy
 | D1 | `TypedValue` = union `string/int/double/bool`; inferred at parse time in `CascadeSheetReader.parseProperty` (no new syntax). |
 | D2 | Losers retained inside `ResolvedValue` as `losers: [Match]`; public API, because `explain` and IR v2 both need them. |
 | D3 | `explain` command address: `<selector> [property]` positional (avoids `Node.prop` ambiguity with class selectors). |
-| D4 | SHA-256 without swift-crypto: vendor ~100-line pure-Swift implementation with NIST vectors in `Tests/`. |
+| D4 | ~~SHA-256 without swift-crypto: vendor pure-Swift implementation~~ Superseded 2026-06-11 (R11): use `swift-crypto` — same CryptoKit API, Linux-capable; accepted as the second dependency. Shipped CryptoKit wrapper is interim. |
 | D5 | `@contract:` block syntax (fits existing outline-reader mechanics, not `@contract Selector:` which needs new grammar). |
 
 ## PR sequence
@@ -122,13 +122,14 @@ New `Schema/hypercode-ir-v2.schema.json`:
 `hypercode emit ... [--ir-version 1|2]` — default v2.
 v1 emitter kept intact for `--ir-version 1`.
 
-### Hashing (D4)
+### Hashing (D4, superseded — see decisions table)
 
-Vendor `Sources/Hypercode/Crypto/SHA256.swift` (~100 lines, FIPS 180-4).
-Test vectors from NIST FIPS 180-4 in `Tests/SHA256Tests.swift`.
+`Sources/Hypercode/Crypto/SHA256.swift` is a thin wrapper over the platform
+SHA-256 (CryptoKit in this PR; switched to `swift-crypto` later in the chain
+per R11). Test vectors from NIST FIPS 180-4 in `Tests/SHA256Tests.swift`.
 
 Node hash input: deterministic JSON of `{type, class?, id?, properties: {key: value}, childHashes: []}`.
-Document hash: SHA-256 of newline-joined sorted node hashes (BFS order).
+Document hash: SHA-256 of newline-joined root-node hashes in document order.
 
 ### CI
 

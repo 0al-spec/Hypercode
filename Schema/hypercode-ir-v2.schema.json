@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0al-spec.github.io/Hypercode/schema/hypercode-ir-v2.schema.json",
+  "title": "Hypercode IR v2",
+  "description": "Hypercode resolved-graph IR v2: typed values, cascade trace (winner + losers), per-node SHA-256 hashes, context echo, resolver metadata. Contracts field is empty until HC-111.",
+  "type": "object",
+  "required": ["version", "context", "resolver", "documentHash", "nodes"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "hypercode.ir/v2"
+    },
+    "context": {
+      "type": "object",
+      "description": "Echo of the --ctx flags supplied at resolution time.",
+      "additionalProperties": { "type": "string" }
+    },
+    "resolver": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "documentHash": {
+      "type": "string",
+      "description": "SHA-256 of newline-joined root-node hashes (document-level fingerprint).",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resolvedNode" }
+    }
+  },
+  "$defs": {
+    "resolvedNode": {
+      "type": "object",
+      "required": ["type", "hash", "properties", "children"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string" },
+        "class": { "type": "string" },
+        "id": { "type": "string" },
+        "hash": {
+          "type": "string",
+          "description": "SHA-256 of the node's stable content (type, class?, id?, resolved values, child hashes).",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/resolvedProperty" }
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/resolvedNode" }
+        }
+      }
+    },
+    "resolvedProperty": {
+      "type": "object",
+      "required": ["value", "winner", "losers", "contracts"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "description": "The winning resolved value (typed).",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "integer" },
+            { "type": "number" },
+            { "type": "boolean" }
+          ]
+        },
+        "winner": { "$ref": "#/$defs/matchEntry" },
+        "losers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/matchEntry" }
+        },
+        "contracts": {
+          "type": "array",
+          "description": "Accumulated selector contracts (HC-111). Empty until contracts are added to .hcs files.",
+          "items": { "$ref": "#/$defs/contractEntry" }
+        }
+      }
+    },
+    "matchEntry": {
+      "type": "object",
+      "required": ["selector", "specificity", "order", "line", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "selector": { "type": "string" },
+        "specificity": {
+          "type": "array",
+          "description": "[ids, classes, types]",
+          "items": { "type": "integer" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "order": { "type": "integer" },
+        "line": { "type": "integer" },
+        "file": { "type": "string" },
+        "value": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "integer" },
+            { "type": "number" },
+            { "type": "boolean" }
+          ]
+        }
+      }
+    },
+    "contractEntry": {
+      "type": "object",
+      "required": ["selector", "type", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "selector": { "type": "string" },
+        "type": { "type": "string", "enum": ["string", "int", "float", "bool"] },
+        "required": { "type": "boolean" },
+        "min": { "type": "number" },
+        "max": { "type": "number" }
+      }
+    }
+  }
+}
