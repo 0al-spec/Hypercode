@@ -33,3 +33,6 @@ jobs:
 
       - name: Codegen demo — generated artifacts fresh & contract-conformant
         run: python3 Examples/codegen-demo/check.py
+
+      - name: Kustomize comparison — metrics + all tenant×env targets validate
+        run: python3 Examples/kustomize-comparison/metrics.py --check

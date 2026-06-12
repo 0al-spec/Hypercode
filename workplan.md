@@ -103,7 +103,7 @@ P1 — built on v2:
 
 ## M9 — Validation & adoption (DOCS/Positioning.md)
 
-- ⬜ HC-120 One deep Kustomize comparison demo — N tenants × M envs; metrics: duplicated structure, time-to-answer "why is this value here?", affected-module precision via IR diff; **must include** an own failure mode (specificity conflict) resolved via `explain`
+- [x] HC-120 Kustomize comparison demo — `Examples/kustomize-comparison/`: 3 tenants × 3 envs maintained twice (idiomatic Kustomize components vs `.hc` + `@import`ed tenant sheets); computed metrics (28 files/278 lines/86% duplication vs 5/57/30%), "why is this value here" via `explain`, affected-target precision via `hypercode diff`, and the own failure mode (specificity beats source order) diagnosed via `explain`; `metrics.py --check` validates all 9 targets in CI
 - ⬜ HC-121 Dogfooding as the primary adoption path — Hyperprompt / Ontology consume the resolved IR (consumer-side dialects & backends per `DOCS/Dialects.md` / `DOCS/Backends.md`)
 - 🅿️ HC-122 SLSA-like generation attestation chain — signed `.hc`/`.hcs` → IR hash → generator identity/version → artifact hashes → validator report (RFC §8, §9.8)
 - 🅿️ HC-123 Agent Passport / 0AL integration — attestation chain plugs into 0AL's signed-agent model

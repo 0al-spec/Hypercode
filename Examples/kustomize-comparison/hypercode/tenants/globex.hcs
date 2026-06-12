@@ -1,0 +1,9 @@
+@import "../base.hcs"
+
+Branding:
+  brand_name: "Globex"
+  theme_color: "#11aa55"
+
+@env[prod]:
+  '#main-db':
+    host: db.globex.internal

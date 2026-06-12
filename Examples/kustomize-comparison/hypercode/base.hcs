@@ -1,0 +1,39 @@
+# Product baseline: defaults, environment blocks, and the invariants every
+# tenant and environment must respect.
+
+Web:
+  replicas: 1
+  log_level: debug
+  image_tag: latest
+
+Web > Listen:
+  port: 8080
+
+'#main-db':
+  host: localhost
+  pool_size: 10
+
+Branding:
+  brand_name: "Default"
+  theme_color: "#cccccc"
+
+@env[staging]:
+  Web:
+    replicas: 2
+    log_level: info
+
+@env[prod]:
+  Web:
+    replicas: 5
+    log_level: warn
+  '#main-db':
+    pool_size: 50
+
+@contract:
+  Web:
+    replicas: int >= 1 <= 20
+    log_level: string
+  Web > Listen:
+    port: int >= 1 <= 65535
+  '#main-db':
+    pool_size[?]: int >= 1 <= 100
