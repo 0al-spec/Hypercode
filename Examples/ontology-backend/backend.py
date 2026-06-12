@@ -33,7 +33,7 @@ def emit_ir(ctx):
            "--hcs", os.path.join(HERE, "examcalc.hcs"), "--format", "json"]
     for pair in ctx or []:
         cmd += ["--ctx", pair]
-    out = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO)
+    out = subprocess.run(cmd, capture_output=True, encoding="utf-8", cwd=REPO)
     if out.returncode != 0:
         sys.exit(f"emit failed: {out.stderr.strip()}")
     return json.loads(out.stdout)
@@ -59,9 +59,20 @@ def cardinality(values):
     return {"min": bound(values["card_min"]), "max": bound(values["card_max"])}
 
 
+SECTIONS = ["Metadata", "Imports", "Classes", "Relations", "Policies",
+            "StateMachines", "Compatibility"]
+
+
 def build(ir):
     package = ir["nodes"][0]
-    by_type = {c["type"]: c for c in package["children"]}
+    by_type = {}
+    for child in package["children"]:
+        if child["type"] in by_type:
+            sys.exit(f"malformed package: duplicate '{child['type']}' section")
+        by_type[child["type"]] = child
+    for section in SECTIONS:
+        if section not in by_type:
+            sys.exit(f"malformed package: missing '{section}' section")
 
     meta = props(by_type["Metadata"])
     doc = {
@@ -196,12 +207,13 @@ def main():
                               default_flow_style=False, width=100)
 
     if args.out:
-        with open(args.out, "w") as handle:
+        with open(args.out, "w", encoding="utf-8") as handle:
             handle.write(rendered)
     if args.check:
         expected_path = os.path.join(HERE, "expected",
                                      "domain-ontology-package.yaml")
-        expected = yaml.safe_load(open(expected_path))
+        with open(expected_path, encoding="utf-8") as handle:
+            expected = yaml.safe_load(handle)
         differences = diff_paths(expected, doc)
         if differences:
             print("generated package differs from the Ontology repo original:",
