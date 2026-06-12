@@ -26,3 +26,14 @@ APIServer > Listen:
   APIServer > Listen:
     host: "0.0.0.0"
     port: 8080
+
+# Invariants the cascade must respect in every context (HC-111).
+# A more specific selector may narrow these, never weaken them.
+@contract:
+  APIServer > Listen:
+    port: int >= 1 <= 65535
+    host: string
+  '#main-db':
+    pool_size[?]: int >= 1 <= 100
+  Logger:
+    level: string

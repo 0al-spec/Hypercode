@@ -8,7 +8,7 @@ build **without touching the structure**.
 📖 **API documentation:** <https://0al-spec.github.io/Hypercode/>
 
 ```
-.hc + .hcs ──[resolve]──▶ resolved graph ──[emit]──▶ canonical IR (hypercode.ir/v1)
+.hc + .hcs ──[resolve]──▶ resolved graph ──[validate contracts]──▶ canonical IR (hypercode.ir/v2)
 ```
 
 ## Why
@@ -18,8 +18,13 @@ build **without touching the structure**.
   context-aware `@rules`.
 - **Context switching / white-label** — one structure, many contexts. Swap
   `--ctx env=production` (or `client=acme`) → different output, same `.hc`.
-- **Provenance** — every resolved value records the selector and source line it
-  came from.
+- **Provenance** — every resolved value records the selector, file and source
+  line it came from; `hypercode explain` shows the winner *and* every losing rule.
+- **Contracts that only narrow** — `@contract:` blocks attach invariants to
+  selectors; values cascade, safety doesn't. A production override that breaks
+  a bound is a build error (`HC2104`), not an incident.
+- **Hashed, typed IR** — per-node SHA-256 over stable resolved content: the
+  invalidation signal for incremental (re)generation.
 
 ## Install
 
@@ -50,9 +55,11 @@ swift run hypercode resolve Examples/service.hc --hcs Examples/service.hcs --ctx
 
 ```
 hypercode parse    <file.hc>
-hypercode validate <file.hc> [--hcs <file.hcs>]
+hypercode validate <file.hc> [--hcs <file.hcs>] [--ctx key=value]...   # incl. contract checks
 hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
-hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml]
+hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml] [--ir-version 1|2]
+hypercode explain  <file.hc> --hcs <file.hcs> [--ctx key=value]... <selector> [property]
+hypercode lsp                                                          # LSP over stdio
 ```
 
 The same structure, two contexts:
@@ -64,12 +71,13 @@ hypercode resolve Examples/service.hc --hcs Examples/service.hcs --ctx env=produ
 
 ## Documentation
 
+- **[Usage guide](DOCS/Usage.md)** — every command with real outputs: contexts, contracts, explain, IR v2
 - **API docs (DocC):** <https://0al-spec.github.io/Hypercode/>
 - [Conceptual overview](OVERVIEW.md)
 - [RFC — the paradigm](RFC/Hypercode.md)
 - Formal specs: [`.hc` syntax (BNF)](EBNF/Hypercode_Syntax.md) · [resolution semantics](EBNF/Hypercode_Resolution.md)
 - Architecture: [overview](DOCS/Architecture.md) · [backends & adapters](DOCS/Backends.md) · [core vs dialects](DOCS/Dialects.md) · [positioning](DOCS/Positioning.md)
-- [Resolved-graph IR schema](Schema/hypercode-ir-v1.schema.json) — the cross-implementation contract
+- Resolved-graph IR schemas — the cross-implementation contract: [v2](Schema/hypercode-ir-v2.schema.json) · [v1 (legacy)](Schema/hypercode-ir-v1.schema.json)
 - [Lean 4 cascade oracle](SPEC/lean/) — machine-checked agreement with the resolver
 - [Work plan](workplan.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
