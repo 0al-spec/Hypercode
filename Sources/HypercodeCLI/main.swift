@@ -31,6 +31,21 @@ func readSource(_ path: String) -> String {
     return text
 }
 
+/// Parses a `--ctx key=value` argument. The key must be a Hypercode
+/// identifier — the same lexical class as `@dimension` names — so a typo
+/// fails loudly here instead of silently matching nothing (and so arbitrary
+/// text can never reach the emitted IR as an object key).
+func parseContextAssignment(_ pair: String) -> (key: String, value: String) {
+    guard let equals = pair.firstIndex(of: "=") else {
+        fail("error: --ctx expects key=value, got '\(pair)'")
+    }
+    let key = String(pair[..<equals])
+    guard IdentifierSpec().isSatisfiedBy(key) else {
+        fail("error: --ctx key must be an identifier, got '\(key)'")
+    }
+    return (key, String(pair[pair.index(after: equals)...]))
+}
+
 func runParse(_ path: String) throws {
     let forest = try Parser(source: readSource(path)).parse()
     print(Command.tree(forest), terminator: "")
@@ -51,11 +66,8 @@ func runResolve(_ args: [String]) throws {
         case "--ctx":
             index += 1
             guard index < args.count else { fail("error: --ctx needs key=value") }
-            let pair = args[index]
-            guard let equals = pair.firstIndex(of: "=") else {
-                fail("error: --ctx expects key=value, got '\(pair)'")
-            }
-            context[String(pair[..<equals])] = String(pair[pair.index(after: equals)...])
+            let (key, value) = parseContextAssignment(args[index])
+            context[key] = value
         default:
             if hcPath == nil { hcPath = args[index] } else {
                 fail("error: unexpected argument '\(args[index])'")
@@ -137,11 +149,8 @@ func runEmit(_ args: [String]) throws {
         case "--ctx":
             index += 1
             guard index < args.count else { fail("error: --ctx needs key=value") }
-            let pair = args[index]
-            guard let equals = pair.firstIndex(of: "=") else {
-                fail("error: --ctx expects key=value, got '\(pair)'")
-            }
-            context[String(pair[..<equals])] = String(pair[pair.index(after: equals)...])
+            let (key, value) = parseContextAssignment(args[index])
+            context[key] = value
         case "--format":
             index += 1
             guard index < args.count, let parsed = EmitFormat(rawValue: args[index]) else {
