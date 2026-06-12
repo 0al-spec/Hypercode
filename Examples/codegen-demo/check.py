@@ -10,8 +10,15 @@ Two independent checks, stdlib only:
      regeneration: only stale modules are rebuilt.
 
   2. Contract conformance — values embedded in generated code are validated
-     against the contracts[] echoed in the IR (type, bounds, required). Even a
-     hand-edited "generated" file that smuggles in port: 99999 is caught.
+     against the contracts[] echoed in the IR: type and bounds for present
+     keys, presence for required contracted keys, and no CONFIG key may exist
+     outside the resolved spec. Even a hand-edited "generated" file that
+     smuggles in port: 99999 — or drops port entirely — is caught.
+
+Each module owns its node's subtree up to the boundary of the next generated
+module (service.py owns /Service but not /Service/Logger.console, which
+logger.py owns). Node paths use selector identity (type[.class][#id]) — the
+same addressing as `hypercode diff`.
 
 Exit codes: 0 = fresh & conformant, 1 = stale modules, 2 = contract violation.
 """
@@ -39,12 +46,25 @@ def emit_ir(hc, hcs, ctx):
     return json.loads(out.stdout)
 
 
+def node_label(node):
+    """Selector identity, same addressing as `hypercode diff`."""
+    label = node["type"]
+    if "class" in node:
+        label += f".{node['class']}"
+    if "id" in node:
+        label += f"#{node['id']}"
+    return label
+
+
 def index_nodes(ir):
-    """path -> node, depth-first."""
+    """path -> node, depth-first; paths are /-joined selector identities."""
     nodes = {}
 
     def walk(node, path):
-        path = f"{path}/{node['type']}"
+        path = f"{path}/{node_label(node)}"
+        if path in nodes:
+            sys.exit(f"ambiguous node path '{path}' — give same-type siblings"
+                     " distinct classes or ids")
         nodes[path] = node
         for child in node["children"]:
             walk(child, path)
@@ -54,16 +74,19 @@ def index_nodes(ir):
     return nodes
 
 
-def subtree_properties(node):
-    """All resolved properties in a node's subtree: key -> property entry."""
+def owned_properties(node, path, claimed):
+    """Resolved properties of the subtree this module owns: its node's
+    subtree, stopping at children that are themselves generated modules."""
     props = {}
 
-    def walk(n):
+    def walk(n, p):
         props.update(n["properties"])
         for child in n["children"]:
-            walk(child)
+            child_path = f"{p}/{node_label(child)}"
+            if child_path not in claimed:
+                walk(child, child_path)
 
-    walk(node)
+    walk(node, path)
     return props
 
 
@@ -89,6 +112,22 @@ TYPE_CHECK = {
 def check_contracts(config, props, module):
     """Validate embedded values against the contracts echoed in the IR."""
     violations = []
+    # Drift: a CONFIG key the spec doesn't resolve is a hand-edit, not output.
+    for key in config:
+        if key not in props:
+            violations.append(
+                f"{module}: '{key}' is not a resolved property of this"
+                " module's nodes — not in the spec")
+    # Presence: a key under a required contract must be carried by CONFIG.
+    for key, prop in sorted(props.items()):
+        if key in config:
+            continue
+        for contract in prop.get("contracts", []):
+            if contract.get("required"):
+                violations.append(
+                    f"{module}: required '{key}' missing from CONFIG"
+                    f" (contract '{contract['selector']}')")
+                break
     for key, value in config.items():
         for contract in props.get(key, {}).get("contracts", []):
             sel = contract["selector"]
@@ -122,19 +161,25 @@ def main():
     ir = emit_ir(args.hc, args.hcs, args.ctx or ["env=production"])
     nodes = index_nodes(ir)
 
-    stale, violations = [], []
     gen_dir = os.path.join(HERE, "generated")
-    for name in sorted(os.listdir(gen_dir)):
-        if not name.endswith(".py"):
-            continue
-        node_path, embedded, config = parse_module(os.path.join(gen_dir, name))
+    modules = [
+        (name, *parse_module(os.path.join(gen_dir, name)))
+        for name in sorted(os.listdir(gen_dir)) if name.endswith(".py")
+    ]
+    # Module boundaries: a node generated as its own module is not part of
+    # its parent module's owned subtree.
+    claimed = {node_path for _, node_path, _, _ in modules}
+
+    stale, violations = [], []
+    for name, node_path, embedded, config in modules:
         node = nodes.get(node_path)
         if node is None:
             sys.exit(f"{name}: node '{node_path}' no longer exists in the IR")
         fresh = node["hash"] == embedded
         if not fresh:
             stale.append(name)
-        violations += check_contracts(config, subtree_properties(node), name)
+        owned = owned_properties(node, node_path, claimed - {node_path})
+        violations += check_contracts(config, owned, name)
         if not args.list_stale:
             status = "FRESH" if fresh else "STALE"
             print(f"  {status}  {name:16} {node_path}")
