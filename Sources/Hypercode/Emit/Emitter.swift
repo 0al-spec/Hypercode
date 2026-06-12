@@ -198,7 +198,7 @@ public struct Emitter {
         case let .object(pairs):
             if pairs.isEmpty { return "{}" }
             let body = pairs
-                .map { inner + "\"\($0.0)\": " + json($0.1, indent: indent + 1) }
+                .map { inner + "\"\(escape($0.0))\": " + json($0.1, indent: indent + 1) }
                 .joined(separator: ",\n")
             return "{\n\(body)\n\(pad)}"
         }
