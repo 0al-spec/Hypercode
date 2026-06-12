@@ -283,16 +283,33 @@ func runDiff(_ args: [String]) throws {
         fail("error: diff needs exactly two IR files: <old.ir.json> <new.ir.json>\n\n\(usage)", code: 64)
     }
 
-    func document(_ path: String) throws -> IRDocument {
-        try IRDocument(json: JSONParser.parse(readSource(path)))
+    // GNU diff convention: 0 identical, 1 differ, 2 trouble — an unreadable
+    // input must not be mistaken for "documents differ" by a CI gate.
+    func document(_ path: String) -> IRDocument {
+        do {
+            return try IRDocument(json: JSONParser.parse(readSource(path)))
+        } catch {
+            fail("error: \(path): \(error)", code: 2)
+        }
     }
-    let old = try document(paths[0])
-    let new = try document(paths[1])
+    let old = document(paths[0])
+    let new = document(paths[1])
 
     let changes = IRDiffer().diff(old: old, new: new)
     switch format {
     case "json": print(IRDiffer.renderJSON(changes), terminator: "")
-    default:     print(IRDiffer.renderText(changes), terminator: "")
+    default:
+        // diff compares resolved content only — the same graph produced under
+        // different contexts is "identical". Say so instead of leaving it implicit.
+        if old.context != new.context {
+            func show(_ ctx: [String: String]) -> String {
+                ctx.isEmpty
+                    ? "(none)"
+                    : ctx.keys.sorted().map { "\($0)=\(ctx[$0]!)" }.joined(separator: " ")
+            }
+            print("note: contexts differ (old: \(show(old.context)); new: \(show(new.context))) — diff compares resolved content only")
+        }
+        print(IRDiffer.renderText(changes), terminator: "")
     }
     if !changes.isEmpty { exit(1) }
 }

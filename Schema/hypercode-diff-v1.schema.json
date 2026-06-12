@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://0al-spec.github.io/Hypercode/schema/hypercode-diff-v1.schema.json",
   "title": "Hypercode diff v1",
-  "description": "Output of `hypercode diff --format json`: the affected-node set between two hypercode.ir/v2 documents, with reasons (old/new value and winning rule). The machine-readable invalidation feed for incremental regeneration (HC-113).",
+  "description": "Output of `hypercode diff --format json`: the affected-node set between two hypercode.ir/v2 documents, with reasons (old/new value and winning rule). The machine-readable invalidation feed for incremental regeneration (HC-113). The comparison covers resolved content only — document metadata (`context`, `resolver`) and provenance do not participate, so two IRs that resolve to the same graph under different contexts diff as identical (an empty `changes` array).",
   "type": "object",
   "required": ["version", "changes"],
   "additionalProperties": false,

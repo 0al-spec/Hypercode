@@ -175,23 +175,44 @@ public enum JSONParser {
             return Character(scalar)
         }
 
+        /// RFC 8259 grammar: `-? (0 | [1-9][0-9]*) (\.[0-9]+)? ([eE][+-]?[0-9]+)?`.
+        /// Strict on purpose: `diff` reads arbitrary files from disk, and a
+        /// lexeme that round-trips here must stay valid JSON when re-emitted.
         mutating func parseNumberLexeme() throws -> String {
             let start = index
             if index < chars.count, chars[index] == "-" { index += 1 }
-            while index < chars.count, chars[index].isNumber { index += 1 }
+
+            guard index < chars.count, isDigit(chars[index]) else {
+                throw JSONError(message: "invalid number")
+            }
+            if chars[index] == "0" { index += 1 } else { skipDigits() }
+            if index < chars.count, isDigit(chars[index]) {
+                throw JSONError(message: "invalid number: leading zero")
+            }
+
             if index < chars.count, chars[index] == "." {
                 index += 1
-                while index < chars.count, chars[index].isNumber { index += 1 }
+                guard index < chars.count, isDigit(chars[index]) else {
+                    throw JSONError(message: "invalid number: fraction needs digits")
+                }
+                skipDigits()
             }
             if index < chars.count, chars[index] == "e" || chars[index] == "E" {
                 index += 1
                 if index < chars.count, chars[index] == "+" || chars[index] == "-" { index += 1 }
-                while index < chars.count, chars[index].isNumber { index += 1 }
-            }
-            guard index > start, String(chars[start..<index]) != "-" else {
-                throw JSONError(message: "invalid number")
+                guard index < chars.count, isDigit(chars[index]) else {
+                    throw JSONError(message: "invalid number: exponent needs digits")
+                }
+                skipDigits()
             }
             return String(chars[start..<index])
+        }
+
+        // ASCII-only by design — Character.isNumber would admit non-ASCII digits.
+        private func isDigit(_ c: Character) -> Bool { c >= "0" && c <= "9" }
+
+        private mutating func skipDigits() {
+            while index < chars.count, isDigit(chars[index]) { index += 1 }
         }
 
         mutating func expect(_ literal: String) throws {

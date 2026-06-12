@@ -151,6 +151,16 @@ final class IRDiffTests: XCTestCase {
         }
     }
 
+    func testParserEnforcesRFC8259Numbers() {
+        // diff reads arbitrary files from disk — the number grammar is strict.
+        for bad in ["1.", "1e", ".5", "-.5", "01", "-01", "1.2e+", "-", "+1", "0x1"] {
+            XCTAssertThrowsError(try JSONParser.parse(bad), "should reject: \(bad)")
+        }
+        for good in ["0", "-0", "0.5", "-0.5", "10", "1e10", "1E+10", "-1.5e-3"] {
+            XCTAssertEqual(try? JSONParser.parse(good), .number(good), "should accept: \(good)")
+        }
+    }
+
     // MARK: - Rendering
 
     func testTextRendering() throws {

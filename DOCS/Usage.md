@@ -226,14 +226,20 @@ $ echo $?
 - Hash-driven: unchanged subtrees are skipped wholesale, so cost is
   proportional to the change, not the tree. A provenance-only change (a
   different rule winning the same value) is invisible — by design.
+- **Resolved content only.** Document metadata (`context`, `resolver`) does
+  not participate: two IRs that resolve to the same graph under different
+  contexts are *identical* (exit `0`) — same graph means nothing to
+  regenerate, whichever context produced it. When the contexts differ, the
+  text output says so in a leading `note:` line.
 - Nodes are matched by selector identity (`type[.class][#id]`); added,
   removed and reordered nodes are reported as such.
 - `--format json` emits `hypercode.diff/v1`
   ([schema](../Schema/hypercode-diff-v1.schema.json), ajv-validated in CI) —
   the machine-readable feed for incremental regeneration (feed it to your
   generator instead of re-running everything).
-- Exit code is `diff`-like: `0` identical, `1` documents differ — usable as a
-  CI gate ("spec changed → require regeneration").
+- Exit code is `diff`-like: `0` identical, `1` documents differ, `2` trouble
+  (unreadable or non-v2 input) — usable as a CI gate
+  ("spec changed → require regeneration").
 
 ## Scalar typing cheat-sheet
 
