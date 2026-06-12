@@ -144,7 +144,7 @@ $ hypercode emit Examples/service.hc --hcs Examples/service.hcs --ctx env=produc
 {
   "version": "hypercode.ir/v2",
   "context": { "env": "production" },          // echo of --ctx
-  "resolver": { "name": "hypercode-swift", "version": "0.5.0" },
+  "resolver": { "name": "hypercode-swift", "version": "0.6.0-dev" },
   "documentHash": "3be098179523f21c…",
   "nodes": [ /* … each node: */
     {
@@ -242,6 +242,55 @@ $ echo $?
 - Exit code is `diff`-like: `0` identical, `1` documents differ, `2` trouble
   (unreadable or non-v2 input) — usable as a CI gate
   ("spec changed → require regeneration").
+
+## 7. Sheet modularity: `@import`
+
+Real configurations don't live in one file (HC-116). A tenant sheet starts
+from the product baseline and overrides only what differs
+([`Examples/imports/acme.hcs`](../Examples/imports/acme.hcs)):
+
+```hcs
+@import "../service.hcs"
+
+'#main-db':
+  pool_size: 80
+
+APIServer > Listen:
+  port: 8443
+```
+
+Imports expand at the directive position, so the importer's rules come later
+in source order and win specificity ties. `explain` shows the cross-file
+cascade — every rule keeps the file it was defined in:
+
+```console
+$ hypercode explain Examples/service.hc --hcs Examples/imports/acme.hcs \
+    --ctx env=production "APIServer > Listen" port
+Node: Service > APIServer > Listen
+  port
+    WINNER   APIServer > Listen { value: 8443 }
+             file: Examples/imports/acme.hcs  line: 10  specificity: (0,0,2)  order: 9
+    ────────────────────
+    losing   APIServer > Listen { value: 8080 }
+             file: Examples/service.hcs  line: 26  specificity: (0,0,2)  order: 7
+    losing   APIServer > Listen { value: 5000 }
+             file: Examples/service.hcs  line: 11  specificity: (0,0,2)  order: 3
+```
+
+The baseline's `@contract:` block still gates the tenant — contracts compose
+across imports and only narrow:
+
+```console
+$ hypercode validate Examples/service.hc --hcs bad-tenant.hcs --ctx env=production
+bad-tenant.hcs:3:1: error[HC2104]: contract violation for 'port': 99999 exceeds upper bound 65535.0 from contract 'APIServer > Listen'
+```
+
+Rules of the road: imports go first; paths resolve relative to the importing
+sheet; a sheet expands once per resolution (diamonds are fine); a cycle is an
+error naming the chain. Trust model: the CLI loader reads any path the
+process can read (absolute and `../` included) — fine for local trusted
+config; embedders resolving untrusted sheets supply a policy-bound loader
+(RFC §8).
 
 ## Scalar typing cheat-sheet
 

@@ -2,9 +2,9 @@
 
 **Status:** Draft
 
-**Version:** 0.2
+**Version:** 0.3
 
-**Date:** June 11, 2026
+**Date:** June 12, 2026
 
 **Author:** Egor Merkushev
 
@@ -110,12 +110,14 @@ Root
 
 ## 6. `.hcs` Cascade Sheet Syntax
 
-A `.hcs` file contains cascade rules and optional contract blocks.
+A `.hcs` file contains optional import directives, cascade rules and optional
+contract blocks.
 
 ### 6.1 Cascade Rule
 
 ```
-<sheet>           ::= { <top-level-block> }
+<sheet>           ::= { <import-stmt> } { <top-level-block> }
+<import-stmt>     ::= "@import" <ws> <quoted-string> <newline>
 <top-level-block> ::= <dimension-block> | <contract-block> | <rule-block>
 
 <dimension-block> ::= "@" <identifier> "[" <value> "]" ":" <newline>
@@ -134,6 +136,17 @@ A bare scalar is type-inferred by the reader: `true`/`false` → bool, integral
 form → int, decimal form without letters → double, anything else → string
 (e.g. `driver: sqlite` is a valid bare string). Quoting forces string. The
 source lexeme is preserved verbatim for v1 IR round-tripping.
+
+#### `@import` (HC-116)
+
+`@import "path.hcs"` includes another sheet. All imports must precede rules,
+context blocks and contracts (CSS discipline). An imported sheet expands
+depth-first **at the position of the directive**, so the importing sheet's
+own rules come later in source order and win specificity ties — the importer
+overrides what it imports. Each sheet is expanded at most once per resolution
+(diamond imports are deduplicated); a cyclic import is an error. Every rule
+keeps the file it was defined in for provenance. Paths resolve relative to
+the importing sheet's location.
 
 ### 6.2 Selectors
 
@@ -191,6 +204,12 @@ only.
 - Define formal AST schema (YAML or JSON).
 
 ## 8. Change Log
+
+**Version 0.3** (2026-06-12)
+
+* Added `@import` directive grammar (HC-116): `<import-stmt>` precedes all
+  blocks; expansion order, import-once and cycle semantics summarized here,
+  defined normatively in `Hypercode_Resolution.md` §5.1.
 
 **Version 0.2** (2026-06-11)
 

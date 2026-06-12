@@ -99,7 +99,7 @@ P1 — built on v2:
 - [x] HC-113 `hypercode diff <old.ir> <new.ir>` — affected nodes/properties with reasons (old/new winner rule), node-hash short-circuit (unchanged subtrees skipped), selector-identity node matching, added/removed/reordered detection, `--format json` = `hypercode.diff/v1` feed, exit 1 on change — `Sources/Hypercode/Diff/` (Foundation-free JSON parser with exact number lexemes)
 - ⬜ HC-114 Runtime resolver boundary — document default build/generation-time mode vs. optional embedded runtime resolver (per-request context: caching, latency, provenance); decide library API or explicit out-of-scope — RFC §9.8
 - 🅿️ HC-115 OpenFeature bridge for the runtime mode *(only if HC-114 decides "in scope")*
-- ⬜ HC-116 `@import` for `.hcs` — sheet modularity; real configurations don't live in one file (resolution order, cycle detection, provenance keeps the importing file)
+- [x] HC-116 `@import` for `.hcs` — sheet modularity: depth-first expansion at the directive position (importer wins ties), import-once for diamonds, cycle detection, cross-file provenance; contracts compose across imports — normative semantics `EBNF/Hypercode_Resolution.md` §5.1
 
 ## M9 — Validation & adoption (DOCS/Positioning.md)
 

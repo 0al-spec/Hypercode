@@ -2,5 +2,5 @@
 /// (`resolver.version`) and available to tooling. Bump together with
 /// `CHANGELOG.md` and the `Package.swift` version comment.
 public enum HypercodeVersion {
-    public static let current = "0.5.0"
+    public static let current = "0.6.0-dev"
 }

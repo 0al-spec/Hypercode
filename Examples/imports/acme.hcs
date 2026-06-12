@@ -1,0 +1,11 @@
+# Tenant sheet (HC-116): start from the product baseline, override only what
+# differs for this tenant. Imported rules come first in source order, so the
+# overrides below win specificity ties; the baseline's @contract: block still
+# gates every value set here.
+@import "../service.hcs"
+
+'#main-db':
+  pool_size: 80
+
+APIServer > Listen:
+  port: 8443

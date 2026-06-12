@@ -98,6 +98,7 @@ hypercode diff old.ir.json new.ir.json
 - ``Rule``
 - ``ContextGuard``
 - ``CascadeSheetReader``
+- ``ImportHandling``
 - ``Resolver``
 - ``ResolutionContext``
 - ``ResolvedNode``

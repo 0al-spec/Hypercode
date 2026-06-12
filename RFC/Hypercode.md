@@ -2,7 +2,7 @@
 
 **Status:** Draft
 
-**Version:** 0.2
+**Version:** 0.3
 
 **Date:** June 11, 2026
 
@@ -152,6 +152,21 @@ The HCS resolution process follows a strict order of precedence, analogous to CS
 
 When multiple rules match a single command, their properties are merged. Properties from higher-specificity rules override those from lower-specificity rules.
 
+#### 4.2.4. Sheet Composition (`@import`)
+
+Real configurations do not live in one file. A sheet MAY begin with one or
+more `@import "path.hcs"` directives; all imports MUST precede rules, context
+blocks and contracts. An imported sheet expands depth-first at the position of
+its directive, so the importing sheet's own rules come later in source order
+and win specificity ties — the importer overrides what it imports, which gives
+the "user override file" origin from §4.2.3 concrete semantics without an
+`!important` mechanism. Each sheet expands at most once per resolution
+(diamonds are deduplicated); a cyclic import is an error. Contracts compose by
+the same expansion and still only narrow: a contract declared in an imported
+baseline gates every value the importer sets. Provenance keeps the file each
+rule was defined in, so `explain` and the IR point at the real source across
+files. (Normative semantics: `EBNF/Hypercode_Resolution.md` §5.1.)
+
 ## 5. Example: A Simple Web Service
 
 This example demonstrates how a single Hypercode file can be configured for both development and production environments using an HCS file.
@@ -235,6 +250,8 @@ APIServer > Listen:
 Hypercode and HCS are declarative and do not define runtime execution isolation or sandboxing. If used in multi-tenant environments, additional security measures (e.g., containerization, seccomp, chroot) should be applied externally.
 
 The specification assumes that the resolution and execution engine is trusted. No mechanisms are currently defined for verifying integrity of `.hcs` rules or controlling their provenance. Future versions may include digital signing or validation capabilities.
+
+`@import` (§4.2.4) widens the read surface: resolving a sheet now reads every transitively imported file. **The import loader is the policy boundary.** The reference CLI loader resolves any path the process can read — including absolute and `../` targets — which is appropriate for trusted local configuration. Embedding contexts that resolve untrusted sheets (agents, services) MUST supply a policy-bound loader (root-confined paths, allow-lists) instead; the `ImportHandling.loader` API exists precisely so that policy lives with the embedder.
 
 ## 9. Novelty and Prior Art
 
@@ -334,6 +351,13 @@ Prior art surveyed in §9:
 * Kang et al., *Feature-Oriented Domain Analysis (FODA)*, CMU/SEI-90-TR-021, 1990 · Pohl, Böckle & van der Linden, *Software Product Line Engineering*, Springer, 2005 — software product lines
 
 ## 12. Change Log
+
+**Version 0.3** (2026-06-12):
+
+* Sheet composition via `@import` (HC-116, §4.2.4): depth-first expansion at
+  the directive position, importer wins specificity ties, import-once,
+  cycle detection, cross-file provenance. Normative semantics in
+  `EBNF/Hypercode_Resolution.md` §5.1.
 
 **Version 0.2** (2026-06-11):
 

@@ -6,16 +6,73 @@ public struct HCSError: Error, Equatable, CustomStringConvertible, Sendable {
     public var description: String { "hcs error at line \(line): \(message)" }
 }
 
+/// How `@import` directives are handled while reading a `.hcs` sheet (HC-116).
+public enum ImportHandling {
+    /// `@import` is an error — the default for single-sheet contexts that
+    /// have no way to load other files.
+    case unsupported
+    /// Directives are validated syntactically but not expanded — live
+    /// diagnostics over a lone text buffer (LSP).
+    case syntaxOnly
+    /// Expand imports. The loader resolves a target *as written* (plus the
+    /// importing file, when known) to a canonical file identity and its
+    /// source text; the identity is what cycle detection and import-once
+    /// dedupe compare, so it must be stable for the same physical sheet.
+    case loader((_ target: String, _ importingFile: String?) throws -> (file: String, source: String))
+}
+
 /// A minimal, hand-rolled reader for the `.hcs` subset we use today: selector
-/// headers, `@dimension[value]` context blocks, and `key: value` properties,
-/// nested by indentation. No third-party YAML dependency — typed scalars and
-/// full YAML come later, only if we ever consume real YAML input.
+/// headers, `@dimension[value]` context blocks, `@contract:` blocks,
+/// `@import "path"` directives, and `key: value` properties, nested by
+/// indentation. No third-party YAML dependency — typed scalars and full YAML
+/// come later, only if we ever consume real YAML input.
 public struct CascadeSheetReader {
     public init() {}
 
     /// Parse a `.hcs` source string into a `CascadeSheet`.
-    /// - Parameter file: Optional path of the source file, stored in each `Rule` for provenance.
-    public func read(_ source: String, file: String? = nil) throws -> CascadeSheet {
+    ///
+    /// Imports expand depth-first at the position of the directive, so the
+    /// importing sheet's own rules come later in source order and win
+    /// specificity ties — the importer overrides what it imports. Each sheet
+    /// is loaded at most once per `read` (diamonds are fine); a cyclic import
+    /// is an error. Rules keep the file they were defined in for provenance.
+    ///
+    /// - Parameters:
+    ///   - file: Optional path of the source file, stored in each `Rule` for
+    ///     provenance. **Must use the same canonical identity scheme the
+    ///     loader returns** — cycle detection and import-once dedupe compare
+    ///     these strings verbatim, so an absolute entry path combined with a
+    ///     loader that returns relative identities (or vice versa) lets the
+    ///     same physical sheet appear under two identities. The CLI
+    ///     normalizes both sides with one helper; library callers must do
+    ///     the same.
+    ///   - imports: How `@import` directives are handled (default: error).
+    public func read(
+        _ source: String, file: String? = nil, imports: ImportHandling = .unsupported
+    ) throws -> CascadeSheet {
+        var state = ReadState()
+        if let file {
+            state.loaded.insert(file)
+            state.stack.append(file)
+        }
+        try readSheet(source, file: file, imports: imports, state: &state)
+        return CascadeSheet(rules: state.rules, contracts: state.contracts)
+    }
+
+    /// Accumulator threaded through import expansion: one global rule order
+    /// (later = wins ties), the set of files already expanded (import-once),
+    /// and the active import chain (cycle detection).
+    private struct ReadState {
+        var rules: [Rule] = []
+        var contracts: [SelectorContract] = []
+        var order = 0
+        var loaded: Set<String> = []
+        var stack: [String] = []
+    }
+
+    private func readSheet(
+        _ source: String, file: String?, imports: ImportHandling, state: inout ReadState
+    ) throws {
         let lines: [RawLine] = source
             .split(separator: "\n", omittingEmptySubsequences: false)
             .enumerated()
@@ -31,13 +88,78 @@ public struct CascadeSheetReader {
         var index = 0
         let outline = buildOutline(lines, &index, parentIndent: -1)
 
-        var rules: [Rule] = []
-        var contracts: [SelectorContract] = []
-        var order = 0
+        var importsAllowed = true
         for node in outline {
-            try interpretTopLevel(node, file: file, into: &rules, contracts: &contracts, order: &order)
+            if isImportDirective(node.line.trimmed) {
+                try handleImport(node, file: file, imports: imports,
+                                 allowed: importsAllowed, state: &state)
+            } else {
+                importsAllowed = false
+                try interpretTopLevel(node, file: file, into: &state.rules,
+                                      contracts: &state.contracts, order: &state.order)
+            }
         }
-        return CascadeSheet(rules: rules, contracts: contracts)
+    }
+
+    // MARK: - Imports (HC-116)
+
+    /// `@import` only with a word boundary — `@important[x]:` stays a guard.
+    private func isImportDirective(_ trimmed: Substring) -> Bool {
+        trimmed == "@import" || trimmed.hasPrefix("@import ") || trimmed.hasPrefix("@import\t")
+    }
+
+    private func handleImport(
+        _ node: Outline, file: String?, imports: ImportHandling,
+        allowed: Bool, state: inout ReadState
+    ) throws {
+        let line = node.line.number
+        guard node.children.isEmpty else {
+            throw HCSError(message: "unexpected nested block under @import", line: line)
+        }
+        // CSS discipline: imports first. This is what makes "imported rules
+        // come earlier in source order" hold by construction.
+        guard allowed else {
+            throw HCSError(message: "@import must precede rules, context blocks and contracts", line: line)
+        }
+        let rest = trim(node.line.trimmed.dropFirst("@import".count))
+        guard rest.count >= 2, let first = rest.first, let last = rest.last,
+              (first == "\"" && last == "\"") || (first == "'" && last == "'") else {
+            throw HCSError(message: "expected @import \"path.hcs\"", line: line)
+        }
+        let target = String(rest.dropFirst().dropLast())
+        guard !target.isEmpty else {
+            throw HCSError(message: "empty @import path", line: line)
+        }
+
+        switch imports {
+        case .unsupported:
+            throw HCSError(message: "@import is not supported here (no import loader)", line: line)
+        case .syntaxOnly:
+            return
+        case .loader(let load):
+            let loadedFile: String
+            let loadedSource: String
+            do {
+                (loadedFile, loadedSource) = try load(target, file)
+            } catch {
+                throw HCSError(message: "cannot load @import \"\(target)\": \(error)", line: line)
+            }
+            if state.stack.contains(loadedFile) {
+                let chain = (state.stack + [loadedFile]).joined(separator: " -> ")
+                throw HCSError(message: "import cycle: \(chain)", line: line)
+            }
+            if state.loaded.contains(loadedFile) { return } // diamond: import once
+            state.loaded.insert(loadedFile)
+            state.stack.append(loadedFile)
+            defer { state.stack.removeLast() }
+            do {
+                try readSheet(loadedSource, file: loadedFile, imports: imports, state: &state)
+            } catch let error as HCSError {
+                // Point at the @import line, but keep the imported file's
+                // own location in the message so the chain stays traceable.
+                throw HCSError(message: "\(loadedFile):\(error.line): \(error.message)", line: line)
+            }
+        }
     }
 
     // MARK: - Outline (group lines into a tree by indentation)
