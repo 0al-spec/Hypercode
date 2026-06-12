@@ -172,6 +172,20 @@ final class ImportTests: XCTestCase {
         XCTAssertEqual(sheet.rules[0].condition?.dimension, "important")
     }
 
+    func testDanglingSelectorDiagnosticNamesTheDefiningFile() throws {
+        // HC3002 for a dead selector in an imported baseline must point at
+        // the baseline, not at the entry sheet that imported it.
+        let commands = try Parser(source: "Service\n").parse()
+        let sheet = try CascadeSheetReader().read(
+            "@import \"base.hcs\"\nService:\n  a: 1\n", file: "entry.hcs",
+            imports: loader(["base.hcs": "LegacyQueue:\n  x: 1\n"])
+        )
+        let diags = Validator().validate(sheet, against: commands)
+        XCTAssertEqual(diags.count, 1)
+        XCTAssertEqual(diags.first?.code, "HC3002")
+        XCTAssertEqual(diags.first?.file, "base.hcs")
+    }
+
     func testErrorInImportedSheetNamesTheFile() {
         XCTAssertThrowsError(try CascadeSheetReader().read(
             "@import \"broken.hcs\"\n", file: "entry.hcs",
