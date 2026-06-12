@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and the project aims to follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 0.6.0-dev
+
+### Added
+- `@import "path.hcs"` for cascade sheets (HC-116): depth-first expansion at
+  the directive position (the importer wins specificity ties), import-once
+  for diamonds, cycle detection, cross-file provenance; contracts compose
+  across imports. `ImportHandling` API (`.unsupported`/`.syntaxOnly`/`.loader`).
+
 ## [0.5.0] — 2026-06-12
 
 Spec-layer hardening: the resolver becomes a verifiable pipeline — typed IR

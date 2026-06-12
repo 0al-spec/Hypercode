@@ -40,7 +40,13 @@ public struct Validator {
         let dangling = sheet.rules.compactMap { rule in
             anyNode(forest, ancestors: [], matches: selectorSpec(rule.selector))
                 ? nil
-                : Diagnostic(severity: .warning, code: "HC3002", message: "selector '\(rule.selector)' matches no node", range: SourceRange(SourcePosition(line: rule.line, column: 1)))
+                // The rule's own file matters: with @import the sheet is
+                // composed from several files, and a dead selector must point
+                // at the sheet that defines it, not at the entry sheet.
+                : Diagnostic(severity: .warning, code: "HC3002",
+                             message: "selector '\(rule.selector)' matches no node",
+                             file: rule.file,
+                             range: SourceRange(SourcePosition(line: rule.line, column: 1)))
         }
         let contractDiags = ContractValidator().validate(sheet.contracts, against: forest)
         return dangling + contractDiags
