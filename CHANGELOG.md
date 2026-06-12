@@ -11,6 +11,37 @@ All notable changes to this project are documented here. The format is based on
   the directive position (the importer wins specificity ties), import-once
   for diamonds, cycle detection, cross-file provenance; contracts compose
   across imports. `ImportHandling` API (`.unsupported`/`.syntaxOnly`/`.loader`).
+- Runtime resolver boundary decision record (HC-114): build/generation-time
+  resolution remains the supported mode for the reference implementation;
+  embedded runtime resolution is out of scope with explicit revisit conditions,
+  and HC-115 (OpenFeature bridge) is parked.
+- Kustomize comparison demo (HC-120): a 3 tenants x 3 environments example
+  modeled both as Kustomize overlays and as Hypercode sheets, with CI metrics
+  for source files, meaningful lines, duplicated lines, and validation of all
+  9 tenant/environment targets.
+- Ontology backend dogfooding example (HC-121): the real `examcalc`
+  DomainOntologyPackage modeled as Hypercode and regenerated from IR v2 by a
+  consumer-side Python adapter; CI checks semantic equality against the
+  original YAML and records the first dogfooding friction log (F1-F5).
+- HC-121 consumer closure notes: Ontology's `ontologyc import-hypercode`
+  consumes ontology-shaped IR v2 as real `DomainOntologyPackage` sections while
+  preserving draft-only governance, and Hyperprompt has a runnable
+  core-Hypercode compile-configuration exercise.
+- RFC §10 backlog contracts: `DOCS/IntegrityChain.md` for HC-122 and
+  `DOCS/TypeSystemDepth.md` for HC-125/HC-126, turning the remaining integrity
+  chain and richer-type questions into explicit acceptance criteria.
+
+### Changed
+- `@import` trust model and library identity contract are documented: the CLI
+  loader is for trusted local configuration, embedders resolving untrusted
+  sheets must provide a policy-bound `ImportHandling.loader`, and
+  `CascadeSheetReader.read(file:imports:)` requires the entry file identity to
+  use the same canonical scheme as loader-returned identities.
+- Ontology backend validation is stricter: duplicate top-level sections and
+  duplicate class/relation/policy/state-machine/field ids now fail with a clear
+  `malformed package` error instead of silently overwriting earlier entries.
+- Demo Python helpers use explicit UTF-8 file/subprocess boundaries where they
+  read generated IR, YAML fixtures, and source trees.
 
 ## [0.5.0] — 2026-06-12
 
