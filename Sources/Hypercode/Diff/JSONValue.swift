@@ -132,6 +132,12 @@ public enum JSONParser {
                     }
                     index += 1
                 } else {
+                    // RFC 8259 §7: U+0000…U+001F must be escaped — a raw
+                    // newline inside a string is malformed JSON, not data.
+                    // (\r\n is a single Character, hence the scalar scan.)
+                    if c.unicodeScalars.contains(where: { $0.value < 0x20 }) {
+                        throw JSONError(message: "unescaped control character in string")
+                    }
                     out.append(c)
                     index += 1
                 }

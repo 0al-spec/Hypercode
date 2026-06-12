@@ -32,9 +32,11 @@ public enum IRChange: Equatable, Sendable {
 /// Node hashes drive the traversal: a subtree whose hash is unchanged is
 /// skipped entirely, so the cost is proportional to what changed, not to the
 /// size of the tree. Nodes are matched across versions by their selector
-/// identity (`type[.class][#id]`, with source order disambiguating
-/// duplicates). Provenance-only changes (a different rule winning the same
-/// value) do not alter hashes and therefore do not appear in the diff.
+/// identity (`type[.class][#id]`); duplicate siblings pair by content hash
+/// first, then by source order — so a duplicate that merely moved is a
+/// reorder, not two modifications. Provenance-only changes (a different rule
+/// winning the same value) do not alter hashes and therefore do not appear
+/// in the diff.
 public struct IRDiffer {
     public init() {}
 
@@ -52,36 +54,56 @@ public struct IRDiffer {
         parentPath: String,
         into changes: inout [IRChange]
     ) {
-        // Identity = label + occurrence index, so duplicate siblings pair up
-        // in source order.
-        func identityKeys(_ nodes: [IRNode]) -> [String] {
-            var counts: [String: Int] = [:]
-            return nodes.map { node in
-                let occurrence = counts[node.label, default: 0]
-                counts[node.label] = occurrence + 1
-                return "\(node.label)@\(occurrence)"
-            }
-        }
-        let oldKeys = identityKeys(old)
-        let newKeys = identityKeys(new)
-        var oldByKey = Dictionary(uniqueKeysWithValues: zip(oldKeys, old.enumerated().map { $0 }))
+        let pairedOldIndex = pairChildren(old, new)
 
         var matchedOldOrder: [Int] = []
-        for (node, key) in zip(new, newKeys) {
+        for (newIndex, node) in new.enumerated() {
             let path = join(parentPath, node.label)
-            if let (oldIndex, oldNode) = oldByKey.removeValue(forKey: key) {
+            if let oldIndex = pairedOldIndex[newIndex] {
                 matchedOldOrder.append(oldIndex)
-                diffNode(oldNode, node, path: path, into: &changes)
+                diffNode(old[oldIndex], node, path: path, into: &changes)
             } else {
                 changes.append(.nodeAdded(path: path))
             }
         }
-        for (_, (_, oldNode)) in oldByKey.sorted(by: { $0.value.0 < $1.value.0 }) {
-            changes.append(.nodeRemoved(path: join(parentPath, oldNode.label)))
+        let matched = Set(pairedOldIndex.compactMap { $0 })
+        for oldIndex in old.indices where !matched.contains(oldIndex) {
+            changes.append(.nodeRemoved(path: join(parentPath, old[oldIndex].label)))
         }
         if matchedOldOrder != matchedOldOrder.sorted() {
             changes.append(.childrenReordered(path: parentPath.isEmpty ? "(root)" : parentPath))
         }
+    }
+
+    /// For each new child, the index of the old child it pairs with (nil =
+    /// added). Pairing is per selector-identity label; inside a label group
+    /// equal hashes pair first, so a duplicate sibling that only moved keeps
+    /// its identity instead of stealing another occurrence's positional slot.
+    /// Leftovers pair in source order.
+    private func pairChildren(_ old: [IRNode], _ new: [IRNode]) -> [Int?] {
+        var oldByLabel: [String: [Int]] = [:]
+        for (index, node) in old.enumerated() {
+            oldByLabel[node.label, default: []].append(index)
+        }
+        var newByLabel: [String: [Int]] = [:]
+        for (index, node) in new.enumerated() {
+            newByLabel[node.label, default: []].append(index)
+        }
+
+        var result = [Int?](repeating: nil, count: new.count)
+        for (label, newIndices) in newByLabel {
+            var available = oldByLabel[label] ?? []
+            for newIndex in newIndices {
+                if let slot = available.firstIndex(where: { old[$0].hash == new[newIndex].hash }) {
+                    result[newIndex] = available.remove(at: slot)
+                }
+            }
+            for newIndex in newIndices where result[newIndex] == nil {
+                if available.isEmpty { break }
+                result[newIndex] = available.removeFirst()
+            }
+        }
+        return result
     }
 
     private func diffNode(

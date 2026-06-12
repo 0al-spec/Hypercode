@@ -231,8 +231,10 @@ $ echo $?
   contexts are *identical* (exit `0`) — same graph means nothing to
   regenerate, whichever context produced it. When the contexts differ, the
   text output says so in a leading `note:` line.
-- Nodes are matched by selector identity (`type[.class][#id]`); added,
-  removed and reordered nodes are reported as such.
+- Nodes are matched by selector identity (`type[.class][#id]`); duplicate
+  siblings pair by content hash first, so a duplicate that merely moved is a
+  reorder, not two modifications. Added, removed and reordered nodes are
+  reported as such.
 - `--format json` emits `hypercode.diff/v1`
   ([schema](../Schema/hypercode-diff-v1.schema.json), ajv-validated in CI) —
   the machine-readable feed for incremental regeneration (feed it to your

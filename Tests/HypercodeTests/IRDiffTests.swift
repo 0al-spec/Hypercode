@@ -98,6 +98,33 @@ final class IRDiffTests: XCTestCase {
         XCTAssertEqual(changes, [.childrenReordered(path: "App")])
     }
 
+    func testDuplicateSiblingSwapIsReorderOnly() throws {
+        // Two same-label siblings with different content swap positions —
+        // identity follows the content hash, not the source position, so this
+        // is a reorder, not two spurious modifications.
+        let sheets = "TaskA:\n  x: 1\nTaskB:\n  x: 2\n"
+        let old = try document(hc: "App\n  Worker\n    TaskA\n  Worker\n    TaskB\n", hcs: sheets)
+        let new = try document(hc: "App\n  Worker\n    TaskB\n  Worker\n    TaskA\n", hcs: sheets)
+        XCTAssertEqual(IRDiffer().diff(old: old, new: new),
+                       [.childrenReordered(path: "App")])
+    }
+
+    func testDuplicateSiblingModifiedInPlace() throws {
+        // No swap: the changed duplicate pairs positionally and reports its
+        // own modification; the untouched one stays silent.
+        let old = try document(hc: "App\n  Worker\n    TaskA\n  Worker\n    TaskB\n",
+                               hcs: "TaskA:\n  x: 1\nTaskB:\n  x: 2\n")
+        let new = try document(hc: "App\n  Worker\n    TaskA\n  Worker\n    TaskB\n",
+                               hcs: "TaskA:\n  x: 1\nTaskB:\n  x: 3\n")
+        let changes = IRDiffer().diff(old: old, new: new)
+        XCTAssertEqual(changes.count, 1, "exactly one modification: \(changes)")
+        guard case let .nodeModified(path, properties)? = changes.first else {
+            return XCTFail("expected nodeModified, got \(changes)")
+        }
+        XCTAssertEqual(path, "App > Worker > TaskB")
+        XCTAssertEqual(properties.map(\.key), ["x"])
+    }
+
     func testNodeIdentityByClassAndId() throws {
         // Same type, different id → not the same node.
         let old = try document(hc: "App\n  Database#primary\n", hcs: "")
@@ -159,6 +186,15 @@ final class IRDiffTests: XCTestCase {
         for good in ["0", "-0", "0.5", "-0.5", "10", "1e10", "1E+10", "-1.5e-3"] {
             XCTAssertEqual(try? JSONParser.parse(good), .number(good), "should accept: \(good)")
         }
+    }
+
+    func testParserRejectsUnescapedControlCharacters() {
+        // RFC 8259 §7: raw U+0000…U+001F inside a string is malformed.
+        for bad in ["\"a\nb\"", "\"a\tb\"", "\"a\u{01}b\"", "\"a\r\nb\""] {
+            XCTAssertThrowsError(try JSONParser.parse(bad), "should reject: \(bad.debugDescription)")
+        }
+        // The escaped spellings are the valid way to carry the same data.
+        XCTAssertEqual(try? JSONParser.parse(#""a\nb\tc""#), .string("a\nb\tc"))
     }
 
     // MARK: - Rendering
