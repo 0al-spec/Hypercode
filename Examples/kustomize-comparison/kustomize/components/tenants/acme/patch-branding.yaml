@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: checkout-branding
+data:
+  brand_name: Acme
+  theme_color: "#0044ff"

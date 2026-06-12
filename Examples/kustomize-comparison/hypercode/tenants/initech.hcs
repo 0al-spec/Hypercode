@@ -1,0 +1,9 @@
+@import "../base.hcs"
+
+Branding:
+  brand_name: "Initech"
+  theme_color: "#ff6600"
+
+@env[prod]:
+  '#main-db':
+    host: db.initech.internal

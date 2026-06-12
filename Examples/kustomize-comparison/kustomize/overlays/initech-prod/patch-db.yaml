@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-web
+spec:
+  template:
+    spec:
+      containers:
+        - name: web
+          env:
+            - name: DB_HOST
+              value: db.initech.internal

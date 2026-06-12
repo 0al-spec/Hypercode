@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: checkout-branding
+data:
+  brand_name: Initech
+  theme_color: "#ff6600"

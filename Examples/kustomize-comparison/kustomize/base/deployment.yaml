@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkout-web
+  template:
+    metadata:
+      labels:
+        app: checkout-web
+    spec:
+      containers:
+        - name: web
+          image: registry.example.com/checkout-web:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: LOG_LEVEL
+              value: debug
+            - name: DB_HOST
+              value: localhost
+            - name: DB_POOL_SIZE
+              value: "10"

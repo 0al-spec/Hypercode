@@ -1,0 +1,10 @@
+@import "../base.hcs"
+
+Branding:
+  brand_name: "Acme"
+  theme_color: "#0044ff"
+
+@env[prod]:
+  '#main-db':
+    host: db.acme.internal
+    pool_size: 80
