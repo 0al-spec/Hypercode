@@ -59,6 +59,7 @@ hypercode validate <file.hc> [--hcs <file.hcs>] [--ctx key=value]...   # incl. c
 hypercode resolve  <file.hc> --hcs <file.hcs> [--ctx key=value]...
 hypercode emit     <file.hc> [--hcs <file.hcs>] [--ctx key=value]... [--format json|yaml] [--ir-version 1|2]
 hypercode explain  <file.hc> --hcs <file.hcs> [--ctx key=value]... <selector> [property]
+hypercode diff     <old.ir.json> <new.ir.json> [--format text|json]    # affected nodes, exit 1 on change
 hypercode lsp                                                          # LSP over stdio
 ```
 
@@ -77,7 +78,7 @@ hypercode resolve Examples/service.hc --hcs Examples/service.hcs --ctx env=produ
 - [RFC — the paradigm](RFC/Hypercode.md)
 - Formal specs: [`.hc` syntax (BNF)](EBNF/Hypercode_Syntax.md) · [resolution semantics](EBNF/Hypercode_Resolution.md)
 - Architecture: [overview](DOCS/Architecture.md) · [backends & adapters](DOCS/Backends.md) · [core vs dialects](DOCS/Dialects.md) · [positioning](DOCS/Positioning.md)
-- Resolved-graph IR schemas — the cross-implementation contract: [v2](Schema/hypercode-ir-v2.schema.json) · [v1 (legacy)](Schema/hypercode-ir-v1.schema.json)
+- Resolved-graph IR schemas — the cross-implementation contract: [IR v2](Schema/hypercode-ir-v2.schema.json) · [diff v1](Schema/hypercode-diff-v1.schema.json) · [IR v1 (legacy)](Schema/hypercode-ir-v1.schema.json)
 - [Lean 4 cascade oracle](SPEC/lean/) — machine-checked agreement with the resolver
 - [Work plan](workplan.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 

@@ -98,6 +98,10 @@ regenerating api_server.py from node /Service/APIServer …
 subtree of each stale node (the source of truth) plus the module conventions,
 then re-runs the checks. No stale module — no LLM call.
 
+The same comparison is available as a compiler command: `hypercode diff
+old.ir.json new.ir.json` reports the affected nodes with the old and new
+winning rules (see [DOCS/Usage.md §6](../../DOCS/Usage.md)).
+
 ## 5. It actually runs
 
 ```console

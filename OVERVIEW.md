@@ -1,145 +1,141 @@
+# Hypercode Conceptual Overview
 
-## Hypercode Conceptual Overview
+## 1. Purpose
 
-### 1. Purpose
+> **Hypercode is a formal, provenance-preserving, context-resolved
+> specification layer between human-reviewed architectural intent and
+> deterministic or AI-assisted code generation.**
 
-Hypercode is an **executable architecture language**.
+The shortest mental model: **CSS for application structure**. A small,
+stable, addressable topology (`.hc`) plus selector-based cascade sheets
+(`.hcs`) resolve — under an explicit context — into a typed, hashed,
+provenance-carrying graph that downstream tooling consumes.
 
-It is designed to describe **how a system is structured at the level of architecture**, and how concrete behavior emerges from that structure and its contextual specialization:
+Hypercode does not replace general-purpose languages. It is the canonical
+place where the system's *structure and its contextual policies* are defined,
+reviewed, and versioned — so that code, configuration, and validation can be
+derived from one deterministic source.
 
-- which elements (agents, services, commands, tasks) exist,
-- how they are related and composed,
-- which stages and alternative paths are structurally defined,
-- how this structure is specialized across environments, tenants, and feature sets.
+## 2. Two Complementary Artifacts: `.hc` and `.hcs`
 
-Its goal is **not** to replace general-purpose languages, but to become the **canonical place where the system's architectural structure is defined**, so that behavior emerges from the combination of that structure and contextual rules.
+### 2.1. Hypercode file (`.hc`) — the structural skeleton
 
----
+A purely declarative, indentation-based declaration of *what exists*:
 
-### 2. Two Complementary Artifacts: `.hc` and `.hcs`
+```hypercode
+Service
+  Logger.console
+  Database#main-db
+    Connect
+  APIServer
+    Listen
+```
 
-Hypercode consists of two tightly related artifacts.
+Nodes carry a **type**, an optional **class** (`.console`) and an optional
+**id** (`#main-db`) — the anchors every other layer addresses. The `.hc` is
+deliberately a *skeleton*, simpler than YAML: structure and intent only, no
+values. ([Formal grammar](EBNF/Hypercode_Syntax.md).)
 
-#### 2.1. Hypercode file (`.hc`) – architectural skeleton
+### 2.2. Cascade sheet (`.hcs`) — values, contexts, contracts
 
-A `.hc` file is a **purely declarative structural declaration** of the system:
+Selector-based rules attach values to the structure, context blocks
+specialize them, and contract blocks declare invariants:
 
-- Declares **structural elements** of the system (nodes, agents, commands, pipelines, states).
-- Declares **structural topology and element relationships**:
-  - which elements exist and their hierarchical containment,
-  - which stages form a sequence,
-  - which named alternatives or fallback slots are declared,
-  - what structural connections exist between elements.
+```hcs
+APIServer > Listen:
+  port: 5000
 
-In the ideal model, **host components are shaped by the Hypercode architecture**, not the other way around: implementations are designed as projections of Hypercode elements and roles, following an "architecture-first" style inspired by ideas like Elegant Objects and EOlang.
+@env[production]:
+  APIServer > Listen:
+    port: 8080
 
-This is already **meaningful structure** – it defines the **architectural shape** of the system, not algorithmic behavior.
+@contract:
+  APIServer > Listen:
+    port: int >= 1 <= 65535
+```
 
-#### 2.2. Hypercode Cascade Sheet (`.hcs`) – contextual specialization & policies
+- **Selectors** (`type`, `.class`, `'#id'`, `parent > child`) express *where*
+  a rule applies; CSS-style **specificity** plus source order decides *which*
+  rule wins.
+- **`@dimension[value]` blocks** (e.g. `@env[production]`, `@client[acme]`)
+  express *when* rules apply; the context is supplied at resolution time
+  (`--ctx env=production`).
+- **`@contract:` blocks** attach property schemas (type, bounds, required)
+  to selectors.
 
-A `.hcs` file describes how the declared structure behaves under different contexts by applying **cascade- and context-aware rules** to elements from `.hc`:
+## 3. The Safety Lock: Asymmetric Cascade
 
-- Contains **selector-based rules** that apply to elements declared in `.hc`.
-- Modulates **how the architecture behaves in specific contexts**:
-  - enables or disables certain elements or paths,
-  - switches implementations or routes,
-  - adjusts limits, timeouts, retries, strategies,
-  - applies security, logging, or resource policies.
-- Uses **cascade semantics**: more specific rules override general ones in a deterministic way.
-- Uses **context-aware directives** (`@env`, `@profile`, `@feature`, etc.) to express how architecture changes across environments and scenarios.
+The rule that makes overriding defensible (normative, [RFC §9.4](RFC/Hypercode.md)):
 
-Together, `.hc` and `.hcs` describe an **executable architectural program**:
-`.hc` defines *what exists and how it is arranged*, `.hcs` defines *how that arrangement behaves in each context*.
+> Values cascade. Contracts accumulate and narrow.
+> A more specific selector MAY override a value.
+> A more specific selector MUST NOT weaken an inherited contract.
 
----
+Hypercode cascades *behavior*, never *safety*. A production override that
+violates a bound is a build error (`HC2104`), not an incident. This combines
+CUE-like monotonic safety with CSS-like contextual selection.
 
-### 3. Division of Responsibilities
+## 4. The Resolved Graph Is the Contract
 
-Hypercode deliberately **separates levels of concern**.
+Resolution is **deterministic and happens at build/generation time**:
+`.hc + .hcs + context → resolved graph → hypercode.ir/v2`
+([schema](Schema/hypercode-ir-v2.schema.json)). The IR carries, per property:
 
-#### Architectural topology & orchestration structure – in Hypercode
+- the **typed value** (`8080`, not `"8080"`),
+- full **provenance** — the winning rule *and* every losing rule, each with
+  selector, file, line, specificity and source order,
+- the **contracts** governing it,
 
-Hypercode expresses:
+and, per node, a **stable content hash** (Merkle over the subtree) — the
+invalidation signal for incremental regeneration.
 
-- which components participate in a scenario,
-- in which sequence they are declared,
-- which alternative paths are structurally defined,
-- which architectural roles and connections exist between components,
-- which policies and strategies are associated with particular structural elements (via `.hcs`).
+Consumers depend on the IR, never the reverse. Target-specific output
+(code, Kubernetes manifests, ontology packages, …) is consumer-owned,
+downstream of the resolved graph ([backends](DOCS/Backends.md)).
 
-#### Algorithmic & low-level behavior – in host languages
+## 5. The Toolchain
 
-Host languages and runtimes remain responsible for:
+| Command | Question it answers |
+|---|---|
+| `hypercode resolve` | what does the structure look like in this context? |
+| `hypercode validate --ctx …` | does the cascade respect every contract here? |
+| `hypercode explain <selector> [prop]` | *why* is this value what it is? (winner + losers) |
+| `hypercode emit` | the IR v2 for downstream consumers |
+| `hypercode diff old.ir new.ir` | which nodes changed, and which rule did it? |
+| `hypercode lsp` | live diagnostics in the editor |
 
-- how a video is encoded or transcoded,
-- how a database query is built and optimized,
-- how a request is validated against a schema,
-- how cryptographic primitives and low-level protocols are implemented.
+Every command with real outputs: [usage guide](DOCS/Usage.md).
 
-Hypercode is the **source of truth for architectural structure and orchestration structure**.
-Host languages are the source of truth for **how each atomic step works internally**.
+## 6. Where Behavior Comes From
 
-Behavior emerges from **interpreting the declared structure (.hc) under the contextual and cascading rules (.hcs)**.
+Algorithmic behavior stays in host languages. Hypercode's role is the layer
+above: an LLM or a deterministic generator consumes the resolved IR and
+produces code **per node**; node hashes scope regeneration to what actually
+changed; the same contracts validate the generated artifacts; provenance lets
+a validator state *which rule* demanded a behavior.
 
----
+The unit of human review shifts from generated code to the **specification
+diff** — humans approve a small, formally resolved change; machines expand it
+into code and validate the expansion (*review compression*). This loop is
+runnable today: [`Examples/codegen-demo/`](Examples/codegen-demo/).
 
-### 4. Execution Model
+Binding time is explicit: context resolves at build/generation time. Runtime
+feature flags (OpenFeature, LaunchDarkly) are a different, composable layer;
+an embedded runtime resolver is an optional mode, currently out of scope
+([RFC §9.8](RFC/Hypercode.md)).
 
-Hypercode is not "just configuration".
+## 7. What Hypercode Is Not
 
-There is a **Hypercode runtime** (or several runtimes in different ecosystems) that:
+- **Not a typed configuration language** (CUE, Dhall, Nickel) — their subject
+  is configuration *data*; Hypercode's subject is an addressable *topology*
+  plus rules over it.
+- **Not model-driven architecture** — `.hc` is deliberately incomplete: a
+  skeleton plus context policies, not a complete model.
+- **Not a Markdown SDD format** (Spec Kit, Kiro, AGENTS.md) — Hypercode sits
+  *underneath* such documents as the part that resolves deterministically and
+  diffs semantically.
+- **Not a DI container, an interface contract, or a feature-flag system** —
+  it provides stable anchors those layers can target.
 
-- loads `.hc` and `.hcs`,
-- builds an **architectural execution graph** from the declared structure,
-- applies cascade and context resolution to that graph,
-- interprets the declared structure and drives execution according to the resolved cascade rules.
-
-In addition to interpreted/executed-at-runtime scenarios, **Hypercode code can also be transformed ahead of time into host-language code**:
-
-- a compiler or generator can translate `.hc + .hcs` into Swift / Java / TypeScript / other code that embeds the architectural structure and its contextual behavior,
-- the resulting code is then compiled into a regular program or library,
-- Hypercode in this mode becomes a **primary architectural source**, from which host code is derived.
-
-Important nuances:
-
-- Hypercode **does not directly construct objects** or manage memory; it **tells the runtime or generated host code**:
-  - which roles and elements are declared,
-  - how they are structurally connected,
-  - which context rules from `.hcs` govern their activation.
-
-- The runtime or generated code maps Hypercode elements to **concrete objects, services, processes, or containers** in a given platform:
-  - Swift objects, Java services, microservices, actors, etc.
-
-So, **Hypercode is executed through a runtime or via generated code**, but the **program being executed at the architectural level** is the combination of `.hc` (structure) and `.hcs` (contextual cascade).
-
----
-
-### 5. Cascade and Context as First-Class Semantics
-
-A key differentiator of Hypercode is that **cascade and context are built into the language model**, not bolted on via tooling conventions.
-
-- **Selectors** (by type, ID, tags, hierarchy, roles, etc.) express *where* a rule applies in the structural graph.
-- **Cascade** expresses *how multiple rules combine*, with deterministic resolution (specificity, precedence, ordering).
-- **Context directives** (`@env`, `@profile`, `@tenant`, `@feature`, etc.) express *when* a rule applies.
-
-This allows:
-
-- expressing **multi-environment, multi-tenant, feature-flagged architecture** declaratively,
-- moving scattered `if (env == "prod")` and feature-flag checks from host code into a **central, inspectable architectural program**,
-- reasoning about behavior changes across contexts at the level of a single structural and rule-based model.
-
----
-
-### 6. Relationship to Other Tools and Languages
-
-Hypercode is intentionally **orthogonal** to many existing tools:
-
-- It is **not just a DI container**: DI focuses on object graphs and injection; Hypercode focuses on **architectural structure and the policies that govern how that structure is used**.
-- It is **not a plain config format**: configs store parameters; Hypercode defines the **architectural topology** of the system and how it behaves under different contexts.
-- It is **not just another DSL**:
-  - It is a **system-level DSL** for executable architecture,
-  - **language-agnostic** by design, meant to sit above general-purpose languages,
-  - with **cascade and context** as first-class constructs.
-
-Hypercode is the place where the system's architectural structure is defined, reviewed, and versioned.
-The system's behavior emerges when this declared structure (.hc) is combined with the contextual and cascading rules (.hcs) and interpreted by a runtime or compiled into host code.
+Full positioning, prior-art map and phrasing discipline:
+[DOCS/Positioning.md](DOCS/Positioning.md) · [RFC §9](RFC/Hypercode.md).

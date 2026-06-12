@@ -24,5 +24,12 @@ jobs:
       - name: Validate IR v2 against schema
         run: npm exec --yes --package=ajv-cli@5 -- ajv validate --spec=draft2020 -s Schema/hypercode-ir-v2.schema.json -d /tmp/ir-dev.json -d /tmp/ir-prod.json
 
+      - name: Diff IR and validate against the diff schema
+        run: |
+          sed 's/port: 8080/port: 9090/' Examples/service.hcs > /tmp/edited.hcs
+          .build/debug/hypercode emit Examples/service.hc --hcs /tmp/edited.hcs --ctx env=production --format json > /tmp/ir-edited.json
+          .build/debug/hypercode diff /tmp/ir-prod.json /tmp/ir-edited.json --format json > /tmp/diff.json || test $? -eq 1
+          npm exec --yes --package=ajv-cli@5 -- ajv validate --spec=draft2020 -s Schema/hypercode-diff-v1.schema.json -d /tmp/diff.json
+
       - name: Codegen demo — generated artifacts fresh & contract-conformant
         run: python3 Examples/codegen-demo/check.py
