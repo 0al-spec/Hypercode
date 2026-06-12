@@ -2,7 +2,7 @@
 
 **Status:** Draft
 
-**Version:** 0.2
+**Version:** 0.3
 
 **Date:** June 11, 2026
 
@@ -151,6 +151,21 @@ The HCS resolution process follows a strict order of precedence, analogous to CS
 3.  **Source Order:** If two selectors have the same specificity, the one that appears later in the document wins.
 
 When multiple rules match a single command, their properties are merged. Properties from higher-specificity rules override those from lower-specificity rules.
+
+#### 4.2.4. Sheet Composition (`@import`)
+
+Real configurations do not live in one file. A sheet MAY begin with one or
+more `@import "path.hcs"` directives; all imports MUST precede rules, context
+blocks and contracts. An imported sheet expands depth-first at the position of
+its directive, so the importing sheet's own rules come later in source order
+and win specificity ties — the importer overrides what it imports, which gives
+the "user override file" origin from §4.2.3 concrete semantics without an
+`!important` mechanism. Each sheet expands at most once per resolution
+(diamonds are deduplicated); a cyclic import is an error. Contracts compose by
+the same expansion and still only narrow: a contract declared in an imported
+baseline gates every value the importer sets. Provenance keeps the file each
+rule was defined in, so `explain` and the IR point at the real source across
+files. (Normative semantics: `EBNF/Hypercode_Resolution.md` §5.1.)
 
 ## 5. Example: A Simple Web Service
 
@@ -334,6 +349,13 @@ Prior art surveyed in §9:
 * Kang et al., *Feature-Oriented Domain Analysis (FODA)*, CMU/SEI-90-TR-021, 1990 · Pohl, Böckle & van der Linden, *Software Product Line Engineering*, Springer, 2005 — software product lines
 
 ## 12. Change Log
+
+**Version 0.3** (2026-06-12):
+
+* Sheet composition via `@import` (HC-116, §4.2.4): depth-first expansion at
+  the directive position, importer wins specificity ties, import-once,
+  cycle detection, cross-file provenance. Normative semantics in
+  `EBNF/Hypercode_Resolution.md` §5.1.
 
 **Version 0.2** (2026-06-11):
 

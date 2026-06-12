@@ -48,6 +48,28 @@ func parseContextAssignment(_ pair: String) -> (key: String, value: String) {
     return (key, String(pair[pair.index(after: equals)...]))
 }
 
+/// Read a `.hcs` sheet with `@import` expansion: targets resolve relative to
+/// the importing sheet's directory; the standardized absolute path is the
+/// identity used for cycle detection and import-once dedupe.
+struct SheetLoadError: Error, CustomStringConvertible { let description: String }
+
+func readSheet(_ path: String) throws -> CascadeSheet {
+    try CascadeSheetReader().read(readSource(path), file: path, imports: .loader { target, importingFile in
+        let baseDir = URL(fileURLWithPath: importingFile ?? path).deletingLastPathComponent()
+        let url = URL(fileURLWithPath: target, relativeTo: baseDir).standardizedFileURL
+        guard let data = try? Data(contentsOf: url),
+              let text = String(data: data, encoding: .utf8) else {
+            throw SheetLoadError(description: "cannot read '\(url.path)'")
+        }
+        // Keep provenance readable: paths under the working directory are
+        // reported relative to it (the canonical form stays consistent, so
+        // cycle detection and dedupe are unaffected).
+        let cwd = FileManager.default.currentDirectoryPath + "/"
+        let identity = url.path.hasPrefix(cwd) ? String(url.path.dropFirst(cwd.count)) : url.path
+        return (identity, text)
+    })
+}
+
 func runParse(_ path: String) throws {
     let forest = try Parser(source: readSource(path)).parse()
     print(Command.tree(forest), terminator: "")
@@ -82,7 +104,7 @@ func runResolve(_ args: [String]) throws {
     guard let hcsPath else { fail("error: resolve needs --hcs <file.hcs>\n\n\(usage)", code: 64) }
 
     let forest = try Parser(source: readSource(hcPath)).parse()
-    let sheet = try CascadeSheetReader().read(readSource(hcsPath), file: hcsPath)
+    let sheet = try readSheet(hcsPath)
     let resolved = Resolver(sheet: sheet, context: context).resolve(forest)
     print(ResolvedNode.tree(resolved), terminator: "")
 }
@@ -126,7 +148,7 @@ func runValidate(_ args: [String]) throws {
     // .hc diagnostics point at the .hc file; .hcs diagnostics at the .hcs file.
     var located = tagged(validator.validate(forest), file: hcPath)
     if let hcsPath {
-        let sheet = try CascadeSheetReader().read(readSource(hcsPath), file: hcsPath)
+        let sheet = try readSheet(hcsPath)
         located += tagged(validator.validate(sheet, against: forest), file: hcsPath)
         // Value-level contract checks run on the resolved graph (HC2104) —
         // resolution is context-dependent, hence validate accepts --ctx.
@@ -191,7 +213,7 @@ func runEmit(_ args: [String]) throws {
     guard let hcPath else { fail("error: emit needs a .hc file\n\n\(usage)", code: 64) }
 
     let commands = try Parser(source: readSource(hcPath)).parse()
-    let sheet = try hcsPath.map { p in try CascadeSheetReader().read(readSource(p), file: p) } ?? CascadeSheet(rules: [])
+    let sheet = try hcsPath.map(readSheet) ?? CascadeSheet(rules: [])
     let resolved = Resolver(sheet: sheet, context: context).resolve(commands)
     print(Emitter().emit(resolved, version: irVersion, context: context,
                          commands: commands, contracts: sheet.contracts, as: format), terminator: "")
@@ -239,7 +261,7 @@ func runExplain(_ args: [String]) throws {
     }
 
     let commands = try Parser(source: readSource(hcPath)).parse()
-    let sheet = try CascadeSheetReader().read(readSource(hcsPath), file: hcsPath)
+    let sheet = try readSheet(hcsPath)
     let resolved = Resolver(sheet: sheet, context: context).resolve(commands)
     let traces = Explainer(commands: commands, resolved: resolved).explain(
         selector: selectorParsed, property: propertyFilter

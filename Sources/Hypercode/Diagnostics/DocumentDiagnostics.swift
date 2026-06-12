@@ -15,7 +15,9 @@ public func diagnostics(for kind: DocumentKind, text: String, file: String? = ni
     do {
         switch kind {
         case .cascadeSheet:
-            _ = try CascadeSheetReader().read(text)
+            // A lone text buffer can't load other files — @import directives
+            // are syntax-checked here; expansion happens in the CLI/library.
+            _ = try CascadeSheetReader().read(text, imports: .syntaxOnly)
             return []
         case .hypercode:
             let forest = try Parser(source: text).parse()

@@ -1,7 +1,7 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
-// Package version: 0.5.0 (echoed by the IR v2 emitter as resolver.version)
+// Package version: 0.6.0-dev (echoed by the IR v2 emitter as resolver.version)
 let package = Package(
     name: "Hypercode",
     platforms: [

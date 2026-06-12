@@ -2,9 +2,9 @@
 
 **Status:** Draft
 
-**Version:** 0.2
+**Version:** 0.3
 
-**Date:** June 11, 2026
+**Date:** June 12, 2026
 
 **Author:** Egor Merkushev
 
@@ -90,6 +90,26 @@ provenance(n, k) = (winning selector, winning source line)
 Because `order` is unique per rule, `max` is unambiguous: higher specificity
 wins, and equal specificity is broken by later source order. (`PropertyCascade`
 is the `DecisionSpec` that performs this choice.)
+
+### 5.1 Sheet composition (`@import`, HC-116)
+
+The rule sequence the cascade operates on may be composed from several sheets:
+
+```text
+rules(sheet) = expand(imports(sheet)) ++ ownRules(sheet)
+```
+
+- An imported sheet expands **depth-first at the position of its directive**;
+  `order` is assigned over the fully expanded sequence. Imports must precede
+  all rules, so the importing sheet's own rules always come later in source
+  order and win specificity ties — the importer overrides what it imports.
+- Each sheet expands **at most once** per resolution (a diamond keeps the
+  first occurrence); a cyclic import is an error.
+- Contracts compose by the same expansion and then accumulate as in §7 —
+  a contract declared in an imported sheet still gates values set by the
+  importer.
+- `provenance(rule)` keeps the file the rule was **defined** in, not the
+  entry sheet.
 
 ## 6. Resolution
 
