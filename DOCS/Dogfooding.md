@@ -80,7 +80,7 @@ trusted Ontology approval remains a governance decision boundary, not an import
 side effect.
 
 **Hyperprompt:** a runnable core-Hypercode exercise was added in the consumer
-repo for Hyperprompt compile configuration. It validates/ emits with the
+repo for Hyperprompt compile configuration. It validates and emits with the
 Hypercode CLI and shows that core Hypercode is useful for resolved
 configuration profiles (`profile=ci`, `profile=editor`), while also confirming
 the earlier dialect decision: Hyperprompt's document-compilation language should
