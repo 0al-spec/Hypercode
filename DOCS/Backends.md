@@ -21,7 +21,7 @@ Compilation to a concrete language or format is **not** part of Hypercode core.
 
 ## Worked example: Ontology
 
-`ontologyc` (Swift, separate repo) would add an `import-hypercode` step:
+`ontologyc` (Swift, separate repo) provides an `import-hypercode` step:
 
 ```text
 *.ontology.hc + *.hcs
@@ -31,6 +31,9 @@ Compilation to a concrete language or format is **not** part of Hypercode core.
 ```
 
 The `--schema domain-ontology-package` knowledge stays on the Ontology side —
-Hypercode never learns the ontology schema. Since `ontologyc` and the Hypercode
-reference tooling are both Swift, the consumer can either link the `Hypercode`
-library or shell out to the `hypercode` CLI and read the IR file.
+Hypercode never learns the ontology schema. The consumer implementation reads
+`hypercode.ir/v2` JSON and maps an ontology-shaped graph to
+`DomainOntologyPackage` YAML inside `ontologyc`; generic graphs still become
+reviewable class drafts. Imports remain draft-only: a Hypercode context may
+resolve `approval_status`, but trusted Ontology approval is a governance
+decision, not an import side effect.

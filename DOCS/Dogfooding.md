@@ -61,7 +61,34 @@ on the first complete run.
 Parity on size for one package (201 vs 212 meaningful lines), clear wins on
 defaults, lifecycle-as-context, diff, contracts and provenance. The
 compression story starts at the second package, when the kind defaults and
-contracts move to a shared `@import`ed baseline. Next adoption step
-(remaining scope of HC-121): an `import-hypercode` step inside `ontologyc`
-itself, consuming the IR the way `backend.py` does, and the same exercise
-for a Hyperprompt configuration.
+contracts move to a shared `@import`ed baseline.
+
+## Entry 2 — Consumer bridge closure (2026-06-13)
+
+**Ontology:** `ontologyc import-hypercode` now consumes current
+`hypercode.ir/v2` as well as the original v1 spike. Generic graphs still
+become reviewable class drafts. Ontology-shaped v2 graphs
+(`Package > Metadata/Imports/Classes/Relations/Policies/StateMachines/
+Compatibility`) map resolved properties into real `DomainOntologyPackage`
+sections, preserving the Backends.md boundary: Ontology owns target-schema
+knowledge, Hypercode only emits IR. The real `examcalc` IR emitted by this
+repo semantically matches Ontology's canonical YAML after import.
+
+The bridge deliberately rejects ontology-shaped IR whose resolved
+`approval_status` is not `draft`. Hypercode can model lifecycle context, but
+trusted Ontology approval remains a governance decision boundary, not an import
+side effect.
+
+**Hyperprompt:** a runnable core-Hypercode exercise was added in the consumer
+repo for Hyperprompt compile configuration. It validates and emits with the
+Hypercode CLI and shows that core Hypercode is useful for resolved
+configuration profiles (`profile=ci`, `profile=editor`), while also confirming
+the earlier dialect decision: Hyperprompt's document-compilation language should
+not be replaced by the core Hypercode parser.
+
+### HC-121 closure
+
+HC-121 is closed as adoption evidence, not as a mandate to merge dialects. The
+remaining F1/F2 pain points feed the type-system depth backlog
+([TypeSystemDepth](TypeSystemDepth.md)); integrity evidence feeds HC-122
+([IntegrityChain](IntegrityChain.md)).

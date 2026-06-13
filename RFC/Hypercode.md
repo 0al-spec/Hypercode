@@ -320,8 +320,8 @@ Spec-driven development is converging on the view that the specification is the 
 ### 9.8. Acknowledged Limits
 
 * **Context binds at resolve time.** `--ctx` is supplied when resolving: Hypercode's default mode decides context at build/generation time. Runtime feature-flag systems (OpenFeature, LaunchDarkly) decide flag values per request at runtime — a different layer that composes with Hypercode rather than competing with it. Serving dynamic context from a single deployment (e.g., many tenants per process) would require embedding the resolver as a runtime library; that mode raises its own caching, latency, and provenance questions and is **decided out of scope** for the reference implementation (HC-114, decision record with revisit conditions: [`DOCS/RuntimeBoundary.md`](../DOCS/RuntimeBoundary.md)). The resolver remains an embeddable pure function of `(sheet, context)`, but core makes no runtime API commitments — no caching, no sheet hot-reload, no per-request provenance sink.
-* **No integrity chain yet.** As noted in §8, nothing verifies the chain end-to-end: signed `.hc`/`.hcs` → resolved-IR hash → generator identity and version → generated-artifact hashes → validator report. SLSA provides the reference vocabulary for such attestations. For the review-compression story to carry governance weight they are eventually required; they are deliberately deferred as future work.
-* **Type-system maturity.** IR v2 carries typed values (string/int/double/bool, inferred at parse time with the source lexeme preserved), and the contract layer (§9.4) ships declarations and monotonicity validation. Resolved values are enforced against the effective contract per context (HC2104, `validate --ctx`). What is still missing versus typed configuration languages: richer value types (lists, maps, durations), cross-property constraints, and user-defined predicates. IR v1 remains strings-only and is kept for backward compatibility.
+* **No integrity chain yet.** As noted in §8, nothing verifies the chain end-to-end: signed `.hc`/`.hcs` → resolved-IR hash → generator identity and version → generated-artifact hashes → validator report. SLSA provides the reference vocabulary for such attestations. For the review-compression story to carry governance weight they are eventually required; HC-122 now has a concrete backlog contract in [`DOCS/IntegrityChain.md`](../DOCS/IntegrityChain.md).
+* **Type-system maturity.** IR v2 carries typed values (string/int/double/bool, inferred at parse time with the source lexeme preserved), and the contract layer (§9.4) ships declarations and monotonicity validation. Resolved values are enforced against the effective contract per context (HC2104, `validate --ctx`). What is still missing versus typed configuration languages: richer value types (especially lists), union/pattern constraints such as `int | "*"`, cross-property constraints, and user-defined predicates. F1/F2 from dogfooding are tracked as HC-125/HC-126 in [`DOCS/TypeSystemDepth.md`](../DOCS/TypeSystemDepth.md). IR v1 remains strings-only and is kept for backward compatibility.
 
 ## 10. Open Questions
 
@@ -341,9 +341,13 @@ The original open questions of draft 0.1 have since been answered:
 Genuinely open:
 
 *  **Integrity chain** (§8, §9.8): signed sources → resolved-IR hash →
-   generator identity → artifact hashes → validator report (SLSA vocabulary).
-*  **Type-system depth** (§9.8): richer value types, cross-property
-   constraints, user-defined predicates.
+   generator identity → artifact hashes → validator report (SLSA vocabulary);
+   planned as HC-122 with the acceptance contract in
+   [`DOCS/IntegrityChain.md`](../DOCS/IntegrityChain.md).
+*  **Type-system depth** (§9.8): richer value types, union/pattern constraints,
+   cross-property constraints, user-defined predicates; dogfooding F1/F2 are
+   planned as HC-125/HC-126 in
+   [`DOCS/TypeSystemDepth.md`](../DOCS/TypeSystemDepth.md).
 
 ## 11. References
 
@@ -381,6 +385,9 @@ Prior art surveyed in §9:
 * §10 Open Questions brought up to date: debugging (HC-110), binding time
   (HC-114) and complexity management (HC-116) recorded as answered; the
   integrity chain and type-system depth remain open.
+* Integrity chain and type-system depth now link to explicit backlog contracts:
+  `DOCS/IntegrityChain.md` (HC-122) and `DOCS/TypeSystemDepth.md`
+  (HC-125/HC-126).
 * §9.4 and §9.8 no longer claim HC2104 is in progress — value-level
   enforcement shipped in 0.5.0.
 
