@@ -92,7 +92,7 @@ APIServer > Listen:
 ```
 
 ```bash
-hypercode resolve service.hc --hcs service.hcs
+hypercode resolve Examples/service.hc --hcs Examples/service.hcs
 ```
 
 The same structure, two contexts:
