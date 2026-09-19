@@ -5,9 +5,16 @@ on: [push, pull_request]
 jobs:
   build-test:
     name: build & test
-    runs-on: macos-latest
+    # SpecificationCore 1.0.0 currently does not compile with Swift 6.3+.
+    # Keep CI on a known-compatible compiler until the dependency is updated.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode 16.4 (Swift 6.1.2)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.4'
 
       - name: Swift version
         run: swift --version
