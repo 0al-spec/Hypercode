@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SoundBlaster/SpecificationCore",
       "state" : {
-        "revision" : "af5b0642282541ae36baffd1328a5dd7c5e61146",
-        "version" : "1.0.0"
+        "revision" : "b70ad99820a7f481f512daee76822f3042a49ca0",
+        "version" : "1.0.1"
       }
     },
     {
