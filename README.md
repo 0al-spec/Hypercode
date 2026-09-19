@@ -63,6 +63,38 @@ hypercode diff     <old.ir.json> <new.ir.json> [--format text|json]    # affecte
 hypercode lsp                                                          # LSP over stdio
 ```
 
+## Example
+
+Describe a service's structure in `.hc`:
+
+```hc
+Service
+  Logger.console
+  Database#main-db
+    Connect
+  APIServer
+    Listen
+```
+
+Set its configuration in `.hcs`, then resolve the two files together:
+
+```hcs
+Logger:
+  level: "info"
+
+Database:
+  driver: "sqlite"
+  file: "dev.sqlite3"
+
+APIServer > Listen:
+  host: "127.0.0.1"
+  port: 5000
+```
+
+```bash
+hypercode resolve Examples/service.hc --hcs Examples/service.hcs
+```
+
 The same structure, two contexts:
 
 ```bash
