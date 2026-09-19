@@ -14,7 +14,7 @@ let package = Package(
     dependencies: [
         // SpecificationCore — the 0AL Specification-pattern foundation; the
         // Hypercode grammar and cascade rules are expressed as composable specs.
-        .package(url: "https://github.com/SoundBlaster/SpecificationCore", from: "1.0.0"),
+        .package(url: "https://github.com/SoundBlaster/SpecificationCore", from: "1.0.1"),
         // swift-crypto — SHA-256 for IR v2 node hashes; same API as CryptoKit,
         // works on Linux (decision R11 in DOCS/Workplan.md).
         .package(url: "https://github.com/apple/swift-crypto", from: "3.0.0"),
