@@ -25,6 +25,23 @@ semantic IR diff (``IRDiffer``). The `hypercode` CLI exposes `parse`,
 See also: the [resolution semantics](https://github.com/0al-spec/Hypercode/blob/main/EBNF/Hypercode_Resolution.md)
 and the [architecture overview](https://github.com/0al-spec/Hypercode/blob/main/DOCS/Architecture.md).
 
+## Composition and consumer boundary
+
+The architectural intent is composition and hierarchy: top-down reading,
+root-organized assembly and input routing, and parts that do not depend on the
+concrete whole. Nesting is not inheritance or an imperative execution schedule;
+these principles do not add compiler checks or change the current multi-root
+grammar. Platform behavior belongs to a consumer-owned generation contract,
+which may begin as a versioned system prompt and needs independent verification.
+
+Consumers may compare desired composition with scanner observations while
+preserving extra relations, mapping ambiguity, and evidence. This is separate
+from `hypercode diff` between resolved IR documents. HCS contracts constrain
+resolved properties; they do not prove code conformance or metric thresholds.
+Backends and viewer adapters remain consumer-owned. See the
+[backend boundary](https://github.com/0al-spec/Hypercode/blob/main/DOCS/Backends.md)
+and [RFC §3.1.1](https://github.com/0al-spec/Hypercode/blob/main/RFC/Hypercode.md#311-composition-and-direction).
+
 ## Usage
 
 Given a structure and a cascade sheet:

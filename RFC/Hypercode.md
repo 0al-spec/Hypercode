@@ -45,7 +45,30 @@ The Hypercode paradigm is built on three main components:
 
 *  **Hypercode Cascade Sheet (`.hcs` file):** A YAML-like file that defines how to interpret and configure the commands in the Hypercode file. It uses selectors to target commands and apply configurations. It is analogous to a CSS stylesheet.
 
-*  **Runtime Environment:** An engine that parses both the `.hc` and `.hcs` files, resolves the configurations by applying the HCS rules to the Hypercode structure, and executes the resulting program.
+*  **Resolution and consumer execution:** Hypercode resolves `.hc` and `.hcs` into canonical IR at build/generation time. A consumer-owned generator or runtime gives that structure platform-specific behavior; executing the resulting program is outside core (see §9.8 and [Backends](../DOCS/Backends.md)).
+
+### 3.1.1 Composition and Direction
+
+The architectural model intentionally favors **composition and hierarchy**.
+Authors read from the whole to its parts; the root organizes assembly from App
+to Button; external inputs enter through the system boundary and are routed
+inward; a composite uses its parts without requiring a part to know the concrete
+whole that contains it. These are design principles, not new compiler checks or
+a prescribed constructor-call order. The current core also permits multiple
+root nodes; this does not introduce a single-root grammar restriction.
+
+Nesting describes composition, not implementation inheritance or an imperative
+schedule. `.class` is a selector marker, not a superclass. Arbitrary UML edges,
+cross-component wiring, and temporal protocols are not additions to core merely
+because an external diagram or scanner can represent them. HCS extensibility
+does not automatically give such metadata structural or execution semantics.
+
+Platform details belong to a **consumer-owned generation contract**, which may
+initially be a versioned system prompt: dependency provision, input routing,
+result delivery, lifecycle, and permitted platform mechanisms. A result flowing
+back does not by itself require a dependency on the concrete parent. The input
+routing root may be supplied by the platform runtime. A prompt guides generation;
+scanner checks, tests, and review must establish which rules the code satisfies.
 
 ### 3.2 Terminology
 
@@ -316,6 +339,15 @@ Spec-driven development is converging on the view that the specification is the 
 * **Confined nondeterminism.** The specification side resolves deterministically (machine-checked, §9.4); nondeterminism is confined to the generation step, where it can be validated against the resolved graph.
 * **A fixed generated/durable boundary.** Classic MDA demanded complete models; an LLM generator tolerates incompleteness, so `.hc` can stay a skeleton. The node boundary fixes the division of labor: orchestration and wiring are derived from the resolved graph (mechanically where possible), while durable leaf implementations live behind generated interfaces and are never overwritten. Node-level hashes over the resolved IR (`hypercode.ir/v2`, [schema](../Schema/hypercode-ir-v2.schema.json)) provide the invalidation signal for incremental regeneration: the hash covers the stable resolved content — type, class, id, resolved values, child hashes — so a provenance-only change (a different rule winning with the same value) does not invalidate. `hypercode diff` computes the affected-node set between two resolved documents, with reasons (old/new value and winning rule), emitting `hypercode.diff/v1` ([schema](../Schema/hypercode-diff-v1.schema.json)) as the machine-readable feed.
 * **Review compression.** The unit of human review shifts from generated code to the specification diff: humans approve a small, formally resolved change; machines expand it into code and validate the expansion against the same graph.
+
+A downstream checker may compare this desired composition with a richer
+**Observed Graph** extracted from code. That comparison is distinct from
+`hypercode diff`, which compares two resolved IR documents. Observations must
+retain their provenance and must not automatically become authored requirements
+or new `.hc` relation types. The checker should identify whether a finding comes
+from the composition, an HCS property contract, an external generation rule, or
+a quality policy, and report insufficient evidence rather than infer absence
+from an incomplete scan. See [Backends](../DOCS/Backends.md).
 
 ### 9.8. Acknowledged Limits
 
