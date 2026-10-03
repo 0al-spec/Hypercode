@@ -120,7 +120,7 @@ hypercode resolve Examples/service.hc --hcs Examples/service.hcs --ctx env=produ
 | Path | What |
 |---|---|
 | `Sources/`, `Tests/`, `Package.swift` | Swift reference implementation (built on [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore)) |
-| `Examples/` | Runnable `.hc` / `.hcs` (service, white-label) |
+| `Examples/` | Runnable `.hc` / `.hcs` (service, white-label, agent connector) |
 | `Schema/` | Versioned IR schema |
 | `RFC/`, `EBNF/*.md`, `DOCS/` | Specification & documents |
 | `EBNF/` (ANTLR / Java) | Conformance oracle for `.hc` parsing |
