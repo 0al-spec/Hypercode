@@ -137,8 +137,10 @@ to the same architecture identities, IR revision, and evidence sources; only
 the selection and presentation should vary by question.
 
 Keep system context separate from presentation context. A system context such
-as `env=production` may change which values resolve and which contracts apply.
-An explanation preference such as “for a new contributor” should change
+as `env=production` may change which values resolve. The applicable contracts
+remain determined by selector matches; those same contracts are checked against
+the context-resolved values, so the validation result may differ by context. An
+explanation preference such as “for a new contributor” should change
 presentation, not resolved values. Similarly, a static hierarchy cannot justify
 an execution animation. A sequence view needs an explicit behavioral model,
 scenario, or observed trace; otherwise it depicts an assumption as if it were
